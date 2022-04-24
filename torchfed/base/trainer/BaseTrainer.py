@@ -18,7 +18,8 @@ class BaseTrainer(ABC):
 
         self.backend: BaseBackend = self.generate_backend()
         # Initializing Nodes
-        for node in self.generate_nodes():
+        self.nodes = self.generate_nodes()
+        for node in self.nodes:
             self.backend.register_node(node)
         self.backend.post_register_node()
 

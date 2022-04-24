@@ -25,19 +25,25 @@ class CIFAR10(Dataset):
             root: str,
             num_users: int,
             num_labels_for_users: int,
-            train: bool = True,
             transform: Optional[Callable] = None,
             target_transform: Optional[Callable] = None,
             download: bool = False,
             seed: int = 0,
     ) -> None:
-        self.identifier = hex_hash(f"{root}-{num_users}-{num_labels_for_users}-{train}-{seed}")
-        if train:
-            dataset_path = os.path.join(root, self.split_base_folder)
-            data_file_name = f"{self.split_dataset_name}.train.{self.identifier}.pkl"
-        else:
-            dataset_path = os.path.join(root, self.split_base_folder)
-            data_file_name = f"{self.split_dataset_name}.test.{self.identifier}.pkl"
+        random.seed(seed)
+        np.random.seed(seed)
+        self.identifier = hex_hash(f"{root}-{num_users}-{num_labels_for_users}-{seed}")
+
+        if transform is None:
+            transform = transforms.Compose([
+                transforms.ToTensor()
+            ])
+
+        self.train_dataset = torchvision.datasets.CIFAR10(root, True, transform, target_transform, download)
+        self.test_dataset = torchvision.datasets.CIFAR10(root, False, transform, target_transform, download)
+
+        dataset_path = os.path.join(root, self.split_base_folder)
+        data_file_name = f"{self.split_dataset_name}.{self.identifier}.pkl"
 
         if os.path.exists(dataset_path):
             pass
@@ -50,22 +56,20 @@ class CIFAR10(Dataset):
         else:
             os.makedirs(dataset_path)
 
-        if transform is None:
-            transform = transforms.Compose([
-                transforms.ToTensor()
-            ])
+        train_dataloader = torch.utils.data.DataLoader(self.train_dataset, batch_size=len(self.train_dataset.data), shuffle=False)
+        test_dataloader = torch.utils.data.DataLoader(self.test_dataset, batch_size=len(self.test_dataset.data), shuffle=False)
 
-        random.seed(seed)
-        np.random.seed(seed)
-
-        self.dataset = torchvision.datasets.CIFAR10(root, train, transform, target_transform, download)
-        dataloader = torch.utils.data.DataLoader(self.dataset, batch_size=len(self.dataset.data), shuffle=False)
-        for _, data in tqdm(enumerate(dataloader, 0)):
-            self.dataset.data, self.dataset.targets = data
+        tensor_train_dataset, tensor_test_dataset = {}, {}
+        for _, data in tqdm(enumerate(train_dataloader, 0)):
+            tensor_train_dataset["data"], tensor_train_dataset["targets"] = data
+        for _, data in tqdm(enumerate(test_dataloader, 0)):
+            tensor_test_dataset["data"], tensor_test_dataset["targets"] = data
 
         inputs, split_inputs, labels = [], [], []
-        inputs.extend(self.dataset.data.cpu().detach().numpy())
-        labels.extend(self.dataset.targets.cpu().detach().numpy())
+        inputs.extend(tensor_train_dataset["data"].cpu().detach().numpy())
+        inputs.extend(tensor_test_dataset["data"].cpu().detach().numpy())
+        labels.extend(tensor_train_dataset["targets"].cpu().detach().numpy())
+        labels.extend(tensor_test_dataset["targets"].cpu().detach().numpy())
         inputs = np.array(inputs)
         labels = np.array(labels)
 
@@ -113,13 +117,10 @@ class CIFAR10(Dataset):
             user_x[user_idx], user_y[user_idx] = zip(*combined)
 
             num_samples = len(user_x[user_idx])
-            if train:
-                len_split = int(0.75 * num_samples)
-                user_data = UserDataset(user_idx, user_x[user_idx][:len_split], user_y[user_idx][:len_split])
-            else:
-                len_split = num_samples - int(0.25 * num_samples)
-                user_data = UserDataset(user_idx, user_x[user_idx][len_split:], user_y[user_idx][len_split:])
-            split_dataset.add_user_dataset(user_data)
+            train_len = int(num_samples * 0.75)
+            train_user_data = UserDataset(user_idx, user_x[user_idx][:train_len], user_y[user_idx][:train_len])
+            test_user_data = UserDataset(user_idx, user_x[user_idx][train_len:], user_y[user_idx][train_len:])
+            split_dataset.add_user_dataset(train_user_data, test_user_data)
         with open(os.path.join(dataset_path, data_file_name), 'wb') as f:
             torch.save(split_dataset, f)
 
@@ -127,3 +128,6 @@ class CIFAR10(Dataset):
 
     def get_user_dataset(self, user_idx) -> UserDataset:
         return self.split_dataset[user_idx]
+
+    def get_bundle_dataset(self):
+        return self.train_dataset, self.test_dataset

@@ -25,7 +25,7 @@ class ClientNode(BaseNode):
         super().__init__(node_id, *args, **kwargs)
         self.device = device
         self.model = model.to(device)
-        self.optimizer = optim.SGD(self.model.parameters(), lr=self.lr)
+        self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr)
         self.loss_fn = torch.nn.CrossEntropyLoss()
         self.dataset_size = len(train_dataset)
 
@@ -47,7 +47,8 @@ class ClientNode(BaseNode):
         self.components["comp_pull"].pull_model(self.model, self.server_id)
 
     def train(self):
-        self.components["comp_train"].local_train(self.model, self.optimizer, self.loss_fn, self.train_loader)
+        for i in range(self.local_iterations):
+            self.components["comp_train"].local_train(self.model, self.optimizer, self.loss_fn, self.train_loader)
 
     def post_train(self):
         self.components["comp_push"].push_model(self.server_id, self.model, self.dataset_size)

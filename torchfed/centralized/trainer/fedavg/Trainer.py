@@ -18,13 +18,11 @@ class Trainer(BaseTrainer):
             self,
             world_size: int,
             model: torch.nn.Module,
-            train_dataset: Dataset,
-            test_dataset: Dataset,
+            dataset: Dataset,
             *args,
             **kwargs):
         self.model = model
-        self.train_dataset = train_dataset
-        self.test_dataset = test_dataset
+        self.dataset = dataset
         self.server_id = "server"
         self.client_id = "client"
         self.cuda = kwargs["cuda"] if "cuda" in kwargs else False
@@ -33,6 +31,7 @@ class Trainer(BaseTrainer):
             assert isinstance(kwargs["gpus"], list), "gpus must be a list"
             self.available_gpus = get_eligible_gpus(kwargs["gpus"])
             self.cuda &= len(self.available_gpus) > 0
+        self.device = "cuda:{}".format(recommend_gpu(self.available_gpus)) if self.cuda else "cpu"
         super().__init__(world_size, *args, **kwargs)
 
     def _process_params(self):
@@ -53,12 +52,13 @@ class Trainer(BaseTrainer):
             client_node = ClientNode(f"{self.client_id}_{index}",
                                      f"{self.server_id}_0",
                                      copy.deepcopy(self.model),
-                                     self.train_dataset.get_user_dataset(index),
-                                     self.test_dataset.get_user_dataset(index),
+                                     self.dataset.get_user_dataset(index)[0],
+                                     self.dataset.get_user_dataset(index)[1],
                                      f"cuda:{recommend_gpu(self.available_gpus)}" if self.cuda else "cpu",
                                      params={
                                          "lr": self.lr,
                                          "batch_size": self.batch_size,
+                                         "local_iterations": self.local_iterations,
                                      })
             nodes.append(client_node)
 
@@ -68,4 +68,20 @@ class Trainer(BaseTrainer):
         pass
 
     def post_train(self):
-        pass
+        for node in self.nodes:
+            if not node.id.startswith(self.server_id):
+                continue
+            model = node.model
+            model.eval()
+            test_dataset = self.dataset.get_bundle_dataset()[1]
+            test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=self.batch_size, shuffle=True)
+            correct = 0
+            total = 0
+            with torch.no_grad():
+                for batch_idx, (data, targets) in enumerate(test_loader, 0):
+                    data, targets = data.to(self.device), targets.to(self.device)
+                    outputs = model(data)
+                    _, predicted = torch.max(outputs.data, 1)
+                    total += targets.size(0)
+                    correct += (predicted == targets).sum().item()
+            print(f'Final Test Accuracy: {100 * correct // total} %')

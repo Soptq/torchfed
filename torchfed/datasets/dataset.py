@@ -7,3 +7,7 @@ class Dataset(ABC):
     @abstractmethod
     def get_user_dataset(self, user_idx) -> UserDataset:
         pass
+
+    @abstractmethod
+    def get_bundle_dataset(self):
+        pass

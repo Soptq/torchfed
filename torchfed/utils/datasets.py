@@ -16,13 +16,15 @@ class UserDataset(Dataset):
 
 class BundleSplitDataset(object):
     def __init__(self):
-        self.dataset = []
+        self.train_dataset = []
+        self.test_dataset = []
 
-    def add_user_dataset(self, dataset: UserDataset):
-        self.dataset.append(dataset)
+    def add_user_dataset(self, train_dataset: UserDataset, test_dataset: UserDataset):
+        self.train_dataset.append(train_dataset)
+        self.test_dataset.append(test_dataset)
 
     def __len__(self):
-        return len(self.dataset)
+        return len(self.train_dataset)
 
     def __getitem__(self, index):
-        return self.dataset[index]
+        return self.train_dataset[index], self.test_dataset[index]
