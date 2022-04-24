@@ -12,6 +12,7 @@ from tqdm import trange, tqdm
 
 from torchfed.datasets import Dataset
 from torchfed.utils.datasets import BundleSplitDataset, UserDataset
+from torchfed.utils.hash import hex_hash
 
 
 class CIFAR10(Dataset):
@@ -30,12 +31,13 @@ class CIFAR10(Dataset):
             download: bool = False,
             seed: int = 0,
     ) -> None:
+        self.identifier = hex_hash(f"{root}-{num_users}-{num_labels_for_users}-{train}-{seed}")
         if train:
             dataset_path = os.path.join(root, self.split_base_folder)
-            data_file_name = f"{self.split_dataset_name}.train.pkl"
+            data_file_name = f"{self.split_dataset_name}.train.{self.identifier}.pkl"
         else:
             dataset_path = os.path.join(root, self.split_base_folder)
-            data_file_name = f"{self.split_dataset_name}.test.pkl"
+            data_file_name = f"{self.split_dataset_name}.test.{self.identifier}.pkl"
 
         if os.path.exists(dataset_path):
             pass
