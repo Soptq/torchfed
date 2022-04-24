@@ -31,7 +31,8 @@ class Trainer(BaseTrainer):
             assert isinstance(kwargs["gpus"], list), "gpus must be a list"
             self.available_gpus = get_eligible_gpus(kwargs["gpus"])
             self.cuda &= len(self.available_gpus) > 0
-        self.device = "cuda:{}".format(recommend_gpu(self.available_gpus)) if self.cuda else "cpu"
+        self.device = "cuda:{}".format(recommend_gpu(
+            self.available_gpus)) if self.cuda else "cpu"
         super().__init__(world_size, *args, **kwargs)
 
     def _process_params(self):
@@ -43,23 +44,27 @@ class Trainer(BaseTrainer):
 
     def generate_nodes(self) -> List[BaseNode]:
         nodes = []
-        server_node = ServerNode(f"{self.server_id}_0",
-                                 copy.deepcopy(self.model),
-                                 f"cuda:{recommend_gpu(self.available_gpus)}" if self.cuda else "cpu")
+        server_node = ServerNode(
+            f"{self.server_id}_0",
+            copy.deepcopy(
+                self.model),
+            f"cuda:{recommend_gpu(self.available_gpus)}" if self.cuda else "cpu")
         nodes.append(server_node)
 
         for index in range(self.world_size):
-            client_node = ClientNode(f"{self.client_id}_{index}",
-                                     f"{self.server_id}_0",
-                                     copy.deepcopy(self.model),
-                                     self.dataset.get_user_dataset(index)[0],
-                                     self.dataset.get_user_dataset(index)[1],
-                                     f"cuda:{recommend_gpu(self.available_gpus)}" if self.cuda else "cpu",
-                                     params={
-                                         "lr": self.lr,
-                                         "batch_size": self.batch_size,
-                                         "local_iterations": self.local_iterations,
-                                     })
+            client_node = ClientNode(
+                f"{self.client_id}_{index}",
+                f"{self.server_id}_0",
+                copy.deepcopy(
+                    self.model),
+                self.dataset.get_user_dataset(index)[0],
+                self.dataset.get_user_dataset(index)[1],
+                f"cuda:{recommend_gpu(self.available_gpus)}" if self.cuda else "cpu",
+                params={
+                    "lr": self.lr,
+                    "batch_size": self.batch_size,
+                    "local_iterations": self.local_iterations,
+                })
             nodes.append(client_node)
 
         return nodes
@@ -74,12 +79,15 @@ class Trainer(BaseTrainer):
             model = node.model
             model.eval()
             test_dataset = self.dataset.get_bundle_dataset()[1]
-            test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=self.batch_size, shuffle=True)
+            test_loader = torch.utils.data.DataLoader(
+                test_dataset, batch_size=self.batch_size, shuffle=True)
             correct = 0
             total = 0
             with torch.no_grad():
                 for batch_idx, (data, targets) in enumerate(test_loader, 0):
-                    data, targets = data.to(self.device), targets.to(self.device)
+                    data, targets = data.to(
+                        self.device), targets.to(
+                        self.device)
                     outputs = model(data)
                     _, predicted = torch.max(outputs.data, 1)
                     total += targets.size(0)

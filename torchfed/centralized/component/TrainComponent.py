@@ -10,7 +10,9 @@ class TrainComponent(BaseComponent):
         counter = 0
         running_loss = 0.0
         for batch_idx, (data, targets) in enumerate(train_loader, 0):
-            data, targets = data.to(self.node.device), targets.to(self.node.device)
+            data, targets = data.to(
+                self.node.device), targets.to(
+                self.node.device)
             optimizer.zero_grad()
             outputs = model(data)
             loss = loss_fn(outputs, targets)

@@ -27,7 +27,8 @@ class BaseNode(ABC):
     def _process_components(self):
         for component in self.generate_components():
             if component.id in self.components:
-                raise Exception(f'Component {component.id} already exists in node {self.id}')
+                raise Exception(
+                    f'Component {component.id} already exists in node {self.id}')
             self.components[component.id] = component
             component.bind(self)
 

@@ -16,7 +16,9 @@ class TestComponent(BaseComponent):
         total = 0
         with torch.no_grad():
             for batch_idx, (data, targets) in enumerate(test_loader, 0):
-                data, targets = data.to(self.node.device), targets.to(self.node.device)
+                data, targets = data.to(
+                    self.node.device), targets.to(
+                    self.node.device)
                 outputs = model(data)
                 _, predicted = torch.max(outputs.data, 1)
                 total += targets.size(0)

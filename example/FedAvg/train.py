@@ -14,7 +14,12 @@ if __name__ == '__main__':
         transforms.ToTensor(),
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
     ])
-    dataset = CIFAR10("./data", num_users, num_labels, download=True, transform=transform)
+    dataset = CIFAR10(
+        "./data",
+        num_users,
+        num_labels,
+        download=True,
+        transform=transform)
 
     model = CIFARNet()
 

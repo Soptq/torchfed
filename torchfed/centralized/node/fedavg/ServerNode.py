@@ -8,7 +8,13 @@ from torchfed.base.node import BaseNode
 
 
 class ServerNode(BaseNode):
-    def __init__(self, node_id: str, model: torch.nn.Module, device: str, *args, **kwargs):
+    def __init__(
+            self,
+            node_id: str,
+            model: torch.nn.Module,
+            device: str,
+            *args,
+            **kwargs):
         self.device = device
         self.model = model.to(device)
         super().__init__(node_id, model, device, *args, **kwargs)

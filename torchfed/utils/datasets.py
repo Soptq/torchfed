@@ -19,7 +19,10 @@ class BundleSplitDataset(object):
         self.train_dataset = []
         self.test_dataset = []
 
-    def add_user_dataset(self, train_dataset: UserDataset, test_dataset: UserDataset):
+    def add_user_dataset(
+            self,
+            train_dataset: UserDataset,
+            test_dataset: UserDataset):
         self.train_dataset.append(train_dataset)
         self.test_dataset.append(test_dataset)
 
