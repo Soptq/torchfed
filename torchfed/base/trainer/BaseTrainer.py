@@ -1,13 +1,18 @@
+import sys
 from abc import abstractmethod, ABC
+import datetime
 from typing import List
 
 from torchfed.base.backend.BaseBackend import BaseBackend
 from torchfed.base.node import BaseNode
+from torchfed.logging import get_logger
+from torchfed.utils.hash import hex_hash
+
+from tqdm import tqdm
 
 
 class BaseTrainer(ABC):
-    def __init__(self, world_size: int, *args, **kwargs):
-        self.world_size = world_size
+    def __init__(self, *args, **kwargs):
         self.args = args
         self.kwargs = kwargs
 
@@ -15,6 +20,8 @@ class BaseTrainer(ABC):
             self.params = self.kwargs['params']
             if len(self.params) > 0:
                 self._process_params()
+        self.logger = None
+        self._setup_logger()
 
         self.backend: BaseBackend = self.generate_backend()
         # Initializing Nodes
@@ -27,9 +34,19 @@ class BaseTrainer(ABC):
         for param in self.params.keys():
             setattr(self, param, self.params[param])
 
+    def _setup_logger(self):
+        formatted_params = {}
+        for param, value in self.params.items():
+            if type(value) == str or type(value) == int or type(value) == float:
+                formatted_params[param] = f"{value:.5f}"
+            elif hasattr(value, 'name'):
+                formatted_params[param] = f"{value.name}"
+        self.logger = get_logger(f"{hex_hash(str(formatted_params))}-{datetime.datetime.now()}")
+        self.logger.info(f"Trainer Parameters: {formatted_params}")
+
     def train(self, epochs: int):
         self.pre_train()
-        for epoch in range(epochs):
+        for epoch in tqdm(range(epochs), file=sys.stdout, leave=False, desc="Global Training"):
             for node in self.backend.get_nodes():
                 node.pre_train()
             for node in self.backend.get_nodes():

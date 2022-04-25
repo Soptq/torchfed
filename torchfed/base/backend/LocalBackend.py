@@ -3,8 +3,8 @@ from torchfed.base.backend import BaseBackend
 
 
 class LocalBackend(BaseBackend):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, logger):
+        super().__init__(logger)
         self.nodes = {}
 
     def register_node(self, node: BaseNode):

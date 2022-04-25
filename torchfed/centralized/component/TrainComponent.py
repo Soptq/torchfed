@@ -20,4 +20,4 @@ class TrainComponent(BaseComponent):
             optimizer.step()
             running_loss += loss.item()
             counter += 1
-        print(f'[{self.node.id}] Loss: {running_loss / counter:.3f}')
+        self.node.logger.info(f'[{self.node.id}] Loss: {running_loss / counter:.3f}')

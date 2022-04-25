@@ -14,25 +14,18 @@ class ClientNode(BaseNode):
     def __init__(
             self,
             node_id: str,
-            server_id: str,
-            model: torch.nn.Module,
-            train_dataset: UserDataset,
-            test_dataset: UserDataset,
-            device: str,
             *args,
             **kwargs):
-        self.server_id = server_id
         super().__init__(node_id, *args, **kwargs)
-        self.device = device
-        self.model = model.to(device)
+        self.model = self.model.to(self.device)
         self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr)
         self.loss_fn = torch.nn.CrossEntropyLoss()
-        self.dataset_size = len(train_dataset)
+        self.dataset_size = len(self.train_dataset)
 
         self.train_loader = torch.utils.data.DataLoader(
-            train_dataset, batch_size=self.batch_size, shuffle=True)
+            self.train_dataset, batch_size=self.batch_size, shuffle=True)
         self.test_loader = torch.utils.data.DataLoader(
-            test_dataset, batch_size=self.batch_size, shuffle=True)
+            self.test_dataset, batch_size=self.batch_size, shuffle=True)
 
     def generate_components(self) -> List[BaseComponent]:
         return [

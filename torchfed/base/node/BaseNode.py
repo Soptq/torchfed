@@ -19,6 +19,7 @@ class BaseNode(ABC):
         self.components = {}
         self._process_components()
         self.backend: BaseBackend | None = None
+        self.logger = None
 
     def _process_params(self):
         for param in self.params.keys():
@@ -34,6 +35,7 @@ class BaseNode(ABC):
 
     def bind(self, backend: BaseBackend):
         self.backend = backend
+        self.logger = self.backend.logger
 
     @abstractmethod
     def generate_components(self) -> List[BaseComponent]:

@@ -11,14 +11,10 @@ class ServerNode(BaseNode):
     def __init__(
             self,
             node_id: str,
-            model: torch.nn.Module,
-            device: str,
             *args,
             **kwargs):
-        self.device = device
-        self.model = model.to(device)
-        super().__init__(node_id, model, device, *args, **kwargs)
         super().__init__(node_id, *args, **kwargs)
+        self.model = self.model.to(self.device)
 
     def generate_components(self) -> List[BaseComponent]:
         return [

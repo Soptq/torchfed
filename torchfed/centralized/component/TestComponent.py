@@ -1,9 +1,8 @@
+import sys
 from torchfed.base.component import BaseComponent
-from torchfed.base.backend.BaseBackend import BaseBackend
-from torchfed.base.node.BaseNode import BaseNode
+from tqdm import tqdm
 
 import torch
-from copy import deepcopy
 
 
 class TestComponent(BaseComponent):
@@ -23,4 +22,4 @@ class TestComponent(BaseComponent):
                 _, predicted = torch.max(outputs.data, 1)
                 total += targets.size(0)
                 correct += (predicted == targets).sum().item()
-        print(f'[{self.node.id}] Test Accuracy: {100 * correct // total} %')
+        self.node.logger.info(f'[{self.node.id}] Test Accuracy: {100 * correct // total} %')

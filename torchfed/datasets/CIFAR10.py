@@ -1,6 +1,6 @@
+import sys
 import os.path
 import random
-import pickle
 from typing import Optional, Callable
 
 import numpy as np
@@ -18,7 +18,6 @@ from torchfed.utils.hash import hex_hash
 class CIFAR10(Dataset):
     split_base_folder = "cifar-10-batches-py-split"
     split_dataset_name = "cifar-10-data"
-    num_classes = 10
 
     def __init__(
             self,
@@ -67,9 +66,9 @@ class CIFAR10(Dataset):
                 self.test_dataset.data), shuffle=False)
 
         tensor_train_dataset, tensor_test_dataset = {}, {}
-        for _, data in tqdm(enumerate(train_dataloader, 0)):
+        for _, data in tqdm(enumerate(train_dataloader, 0), file=sys.stdout):
             tensor_train_dataset["data"], tensor_train_dataset["targets"] = data
-        for _, data in tqdm(enumerate(test_dataloader, 0)):
+        for _, data in tqdm(enumerate(test_dataloader, 0), file=sys.stdout):
             tensor_test_dataset["data"], tensor_test_dataset["targets"] = data
 
         inputs, split_inputs, labels = [], [], []
@@ -137,6 +136,10 @@ class CIFAR10(Dataset):
             torch.save(split_dataset, f)
 
         self.split_dataset = split_dataset
+
+    @property
+    def name(self) -> str:
+        return "CIFAR10"
 
     def get_user_dataset(self, user_idx) -> UserDataset:
         return self.split_dataset[user_idx]

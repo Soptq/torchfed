@@ -23,7 +23,10 @@ if __name__ == '__main__':
 
     model = CIFARNet()
 
-    trainer = Trainer(num_users, model, dataset, params={
+    trainer = Trainer(params={
+        "world_size": num_users,
+        "model": model,
+        "dataset": dataset,
         "lr": 1e-3,
         "batch_size": 32,
         "local_iterations": 10,
