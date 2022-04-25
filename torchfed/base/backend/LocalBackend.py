@@ -23,3 +23,12 @@ class LocalBackend(BaseBackend):
 
     def get_nodes(self):
         return self.nodes.values()
+
+    def get_nodes_by_components_type(self, component_type):
+        nodes = {}
+        for node_id, node in self.nodes.items():
+            for component in node.components.values():
+                if isinstance(component, component_type):
+                    nodes[node_id] = node
+                    continue
+        return nodes

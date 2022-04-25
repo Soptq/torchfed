@@ -37,7 +37,7 @@ class BaseTrainer(ABC):
     def _setup_logger(self):
         formatted_params = {}
         for param, value in self.params.items():
-            if type(value) == str or type(value) == int or type(value) == float:
+            if isinstance(value, str) or isinstance(value, int) or isinstance(value, float):
                 formatted_params[param] = f"{value:.5f}"
             elif hasattr(value, 'name'):
                 formatted_params[param] = f"{value.name}"
