@@ -22,4 +22,5 @@ class TestComponent(BaseComponent):
                 _, predicted = torch.max(outputs.data, 1)
                 total += targets.size(0)
                 correct += (predicted == targets).sum().item()
-        self.node.logger.info(f'[{self.node.id}] Test Accuracy: {100 * correct // total} %')
+        self.node.logger.info(
+            f'[{self.node.id}] Test Accuracy: {100 * correct // total} %')

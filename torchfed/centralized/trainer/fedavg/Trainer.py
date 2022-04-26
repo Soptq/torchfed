@@ -39,7 +39,8 @@ class Trainer(BaseTrainer):
             f"{self.server_id}_0",
             params={
                 "sample_size": self.sample_size,
-                "model": copy.deepcopy(self.model),
+                "model": copy.deepcopy(
+                    self.model),
                 "device": f"cuda:{recommend_gpu(self.available_gpus)}" if self.cuda else "cpu",
             })
         nodes.append(server_node)

@@ -45,13 +45,19 @@ class BaseTrainer(ABC):
                 formatted_params[param] = f"{value:.5f}"
             elif hasattr(value, 'name'):
                 formatted_params[param] = f"{value.name}"
-        self.logger = get_logger(f"{hex_hash(str(formatted_params))}-{datetime.datetime.now()}")
+        self.logger = get_logger(
+            f"{hex_hash(str(formatted_params))}-{datetime.datetime.now()}")
         self.logger.info(f"Trainer Parameters: {formatted_params}")
 
     def train(self, epochs: int):
         self.pre_train()
-        for epoch in tqdm(range(epochs), file=sys.stdout, leave=False, desc="Global Training"):
-            ready_nodes = [node for node in self.backend.get_nodes() if node.will_train(epoch)]
+        for epoch in tqdm(
+                range(epochs),
+                file=sys.stdout,
+                leave=False,
+                desc="Global Training"):
+            ready_nodes = [
+                node for node in self.backend.get_nodes() if node.will_train(epoch)]
             for node in ready_nodes:
                 node.pre_train(epoch)
             for node in ready_nodes:
