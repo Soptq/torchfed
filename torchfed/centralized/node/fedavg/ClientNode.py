@@ -38,15 +38,24 @@ class ClientNode(BaseNode):
     def update_model(self, model):
         self.model = model
 
-    def pre_train(self):
+    def get_peers(self, nodes: List[BaseNode]) -> List[BaseNode]:
+        return [node for node in nodes if node.id == self.server_id]
+
+    def will_train(self, epoch: int) -> bool:
+        will_train = True
+        for peer in self.peers:
+            will_train &= (self.id in peer.selected_nodes)
+        return will_train
+
+    def pre_train(self, epoch: int):
         self.components["comp_pull"].pull_model(self.model, self.server_id)
 
-    def train(self):
+    def train(self, epoch: int):
         for i in range(self.local_iterations):
             self.components["comp_train"].local_train(
                 self.model, self.optimizer, self.loss_fn, self.train_loader)
 
-    def post_train(self):
+    def post_train(self, epoch: int):
         self.components["comp_push"].push_model(
             self.server_id, self.model, self.dataset_size)
         self.components["comp_test"].local_test(self.model, self.test_loader)

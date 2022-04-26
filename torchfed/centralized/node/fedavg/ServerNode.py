@@ -1,3 +1,4 @@
+import random
 from typing import List
 
 import torch.nn
@@ -15,20 +16,34 @@ class ServerNode(BaseNode):
             **kwargs):
         super().__init__(node_id, *args, **kwargs)
         self.model = self.model.to(self.device)
+        self.selected_nodes = []
+
+    def _select_peers(self, num_samples=-1):
+        if num_samples < 0:
+            num_samples = len(self.peers)
+        selected_nodes = random.sample(list(self.peers), num_samples)
+        return [node.id for node in selected_nodes]
 
     def generate_components(self) -> List[BaseComponent]:
         return [
-            AverageComponent("comp_avg", self.model)
+            AverageComponent("comp_avg")
         ]
 
     def update_model(self, model, dataset_size):
         self.components["comp_avg"].update_model(model, dataset_size)
 
-    def pre_train(self):
+    def get_peers(self, nodes: List[BaseNode]) -> List[BaseNode]:
+        return nodes
+
+    def will_train(self, epoch: int) -> bool:
+        self.selected_nodes = self._select_peers(self.sample_size)
+        return True
+
+    def pre_train(self, epoch: int):
         pass
 
-    def train(self):
-        self.model = self.components["comp_avg"].average()
+    def train(self, epoch: int):
+        self.components["comp_avg"].average(self.model)
 
-    def post_train(self):
+    def post_train(self, epoch: int):
         pass

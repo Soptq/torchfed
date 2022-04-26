@@ -19,6 +19,8 @@ class CIFAR10(Dataset):
     split_base_folder = "cifar-10-batches-py-split"
     split_dataset_name = "cifar-10-data"
 
+    num_classes = 10
+
     def __init__(
             self,
             root: str,
@@ -53,7 +55,7 @@ class CIFAR10(Dataset):
                 with open(os.path.join(dataset_path, data_file_name), 'rb') as f:
                     self.split_dataset = torch.load(f)
                 return
-            except BaseException:
+            except Exception:
                 pass
         else:
             os.makedirs(dataset_path)

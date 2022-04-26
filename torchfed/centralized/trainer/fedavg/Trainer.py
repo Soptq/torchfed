@@ -17,7 +17,6 @@ class Trainer(BaseTrainer):
             *args,
             **kwargs):
         super().__init__(*args, **kwargs)
-        self.server_id, self.client_id = "", ""
 
     def _process_params(self):
         setattr(self, "cuda", False)
@@ -35,12 +34,11 @@ class Trainer(BaseTrainer):
         return LocalBackend(self.logger)
 
     def generate_nodes(self) -> List[BaseNode]:
-        self.server_id = "server"
-        self.client_id = "client"
         nodes = []
         server_node = ServerNode(
             f"{self.server_id}_0",
             params={
+                "sample_size": self.sample_size,
                 "model": copy.deepcopy(self.model),
                 "device": f"cuda:{recommend_gpu(self.available_gpus)}" if self.cuda else "cpu",
             })

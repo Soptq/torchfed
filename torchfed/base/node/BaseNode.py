@@ -20,6 +20,7 @@ class BaseNode(ABC):
         self._process_components()
         self.backend: BaseBackend | None = None
         self.logger = None
+        self.peers = []
 
     def _process_params(self):
         for param in self.params.keys():
@@ -36,19 +37,28 @@ class BaseNode(ABC):
     def bind(self, backend: BaseBackend):
         self.backend = backend
         self.logger = self.backend.logger
+        self.peers = self.get_peers(self.backend.get_nodes())
+
+    @abstractmethod
+    def get_peers(self, nodes: List[BaseNode]) -> List[BaseNode]:
+        pass
 
     @abstractmethod
     def generate_components(self) -> List[BaseComponent]:
         pass
 
     @abstractmethod
-    def pre_train(self):
+    def will_train(self, epoch: int) -> bool:
         pass
 
     @abstractmethod
-    def train(self):
+    def pre_train(self, epoch: int):
         pass
 
     @abstractmethod
-    def post_train(self):
+    def train(self, epoch: int):
+        pass
+
+    @abstractmethod
+    def post_train(self, epoch: int):
         pass

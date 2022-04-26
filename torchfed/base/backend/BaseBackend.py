@@ -13,6 +13,10 @@ class BaseBackend(ABC):
         pass
 
     @abstractmethod
+    def pre_register_node(self):
+        pass
+
+    @abstractmethod
     def register_node(self, node: "BaseNode"):
         pass
 

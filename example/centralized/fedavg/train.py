@@ -15,7 +15,7 @@ if __name__ == '__main__':
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
     ])
     dataset = CIFAR10(
-        "./data",
+        "../../data",
         num_users,
         num_labels,
         download=True,
@@ -24,7 +24,10 @@ if __name__ == '__main__':
     model = CIFARNet()
 
     trainer = Trainer(params={
+        "server_id": "server",
+        "client_id": "client",
         "world_size": num_users,
+        "sample_size": 10,
         "model": model,
         "dataset": dataset,
         "lr": 1e-3,

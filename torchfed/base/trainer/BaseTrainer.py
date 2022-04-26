@@ -26,6 +26,8 @@ class BaseTrainer(ABC):
         self.backend: BaseBackend = self.generate_backend()
         # Initializing Nodes
         self.nodes = self.generate_nodes()
+
+        self.backend.pre_register_node()
         for node in self.nodes:
             self.backend.register_node(node)
         self.backend.post_register_node()
@@ -37,7 +39,9 @@ class BaseTrainer(ABC):
     def _setup_logger(self):
         formatted_params = {}
         for param, value in self.params.items():
-            if isinstance(value, str) or isinstance(value, int) or isinstance(value, float):
+            if isinstance(value, str):
+                formatted_params[param] = value
+            elif isinstance(value, int) or isinstance(value, float):
                 formatted_params[param] = f"{value:.5f}"
             elif hasattr(value, 'name'):
                 formatted_params[param] = f"{value.name}"
@@ -47,12 +51,13 @@ class BaseTrainer(ABC):
     def train(self, epochs: int):
         self.pre_train()
         for epoch in tqdm(range(epochs), file=sys.stdout, leave=False, desc="Global Training"):
-            for node in self.backend.get_nodes():
-                node.pre_train()
-            for node in self.backend.get_nodes():
-                node.train()
-            for node in self.backend.get_nodes():
-                node.post_train()
+            ready_nodes = [node for node in self.backend.get_nodes() if node.will_train(epoch)]
+            for node in ready_nodes:
+                node.pre_train(epoch)
+            for node in ready_nodes:
+                node.train(epoch)
+            for node in ready_nodes:
+                node.post_train(epoch)
         self.post_train()
 
     @abstractmethod

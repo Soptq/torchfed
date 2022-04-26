@@ -7,6 +7,9 @@ class LocalBackend(BaseBackend):
         super().__init__(logger)
         self.nodes = {}
 
+    def pre_register_node(self):
+        pass
+
     def register_node(self, node: BaseNode):
         if node.id in self.nodes:
             raise Exception(f"Node with id {node.id} already registered")
