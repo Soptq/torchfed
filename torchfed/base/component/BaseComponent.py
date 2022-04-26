@@ -22,3 +22,15 @@ class BaseComponent(ABC):
 
     def bind(self, node: "BaseNode"):
         self.node = node
+
+    @abstractmethod
+    def pre_train(self, epoch: int):
+        pass
+
+    @abstractmethod
+    def train(self, epoch: int):
+        pass
+
+    @abstractmethod
+    def post_train(self, epoch: int):
+        pass

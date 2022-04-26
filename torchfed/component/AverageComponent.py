@@ -1,4 +1,5 @@
 import random
+from typing import List
 
 from torchfed.base.component import BaseComponent
 
@@ -22,9 +23,15 @@ class AverageComponent(BaseComponent):
             else:
                 self.storage[name] += param.data.clone() * dataset_size
 
-    def average(self, model):
+    def pre_train(self, epoch: int):
+        pass
+
+    def train(self, epoch: int):
         if self.total_size == 0:
             return
-        for name, param in model.named_parameters():
+        for name, param in self.node.model.named_parameters():
             param.data = self.storage[name] / self.total_size
         self._reset()
+
+    def post_train(self, epoch: int):
+        pass

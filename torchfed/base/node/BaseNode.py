@@ -39,6 +39,18 @@ class BaseNode(ABC):
         self.logger = self.backend.logger
         self.peers = self.get_peers(self.backend.get_nodes())
 
+    def pre_train(self, epoch: int):
+        for component in self.components.values():
+            component.pre_train(epoch)
+
+    def train(self, epoch: int):
+        for component in self.components.values():
+            component.train(epoch)
+
+    def post_train(self, epoch: int):
+        for component in self.components.values():
+            component.post_train(epoch)
+
     @abstractmethod
     def get_peers(self, nodes: List[BaseNode]) -> List[BaseNode]:
         pass
@@ -48,17 +60,9 @@ class BaseNode(ABC):
         pass
 
     @abstractmethod
+    def epoch_init(self, epoch: int):
+        pass
+
+    @abstractmethod
     def will_train(self, epoch: int) -> bool:
-        pass
-
-    @abstractmethod
-    def pre_train(self, epoch: int):
-        pass
-
-    @abstractmethod
-    def train(self, epoch: int):
-        pass
-
-    @abstractmethod
-    def post_train(self, epoch: int):
         pass

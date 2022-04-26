@@ -12,5 +12,14 @@ class PushToOthersComponent(BaseComponent):
     def __init__(self, component_id, *args, **kwargs):
         super().__init__(component_id, *args, **kwargs)
 
-    def push_model(self, target_id, model, dataset_size):
-        self.node.backend.get_node(target_id).update_model(model, dataset_size)
+    def pre_train(self, epoch: int):
+        pass
+
+    def train(self, epoch: int):
+        pass
+
+    def post_train(self, epoch: int):
+        for peer in self.node.peers:
+            peer.update_model(
+                self.node.id, self.node.model, self.node.dataset_size
+            )

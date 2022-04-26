@@ -56,8 +56,11 @@ class BaseTrainer(ABC):
                 file=sys.stdout,
                 leave=False,
                 desc="Global Training"):
+            for node in self.nodes:
+                node.epoch_init(epoch)
             ready_nodes = [
                 node for node in self.backend.get_nodes() if node.will_train(epoch)]
+
             for node in ready_nodes:
                 node.pre_train(epoch)
             for node in ready_nodes:

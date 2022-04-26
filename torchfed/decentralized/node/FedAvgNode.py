@@ -1,14 +1,15 @@
+import random
 from typing import List
 
-import torch.nn
+import torch
 import torch.optim as optim
 
 from torchfed.base.component import BaseComponent
-from torchfed.component import TrainComponent, TestComponent, PullFromOthersComponent, PushToOthersComponent
+from torchfed.component import TrainComponent, PushToOthersComponent, AverageComponent, TestComponent
 from torchfed.base.node import BaseNode
 
 
-class ClientNode(BaseNode):
+class FedAvgNode(BaseNode):
     def __init__(
             self,
             node_id: str,
@@ -24,23 +25,32 @@ class ClientNode(BaseNode):
             self.train_dataset, batch_size=self.batch_size, shuffle=True)
         self.test_loader = torch.utils.data.DataLoader(
             self.test_dataset, batch_size=self.batch_size, shuffle=True)
+        self.selected_nodes = []
+
+    def _select_peers(self, num_samples=-1):
+        if num_samples < 0:
+            num_samples = len(self.peers)
+        selected_nodes = random.sample(list(self.peers), num_samples)
+        return [node.id for node in selected_nodes]
 
     def generate_components(self) -> List[BaseComponent]:
         return [
-            PullFromOthersComponent("comp_pull"),
-            TrainComponent("comp_train"),
-            PushToOthersComponent("comp_push"),
+            AverageComponent("comp_avg"),
+            TrainComponent('comp_train'),
+            PushToOthersComponent('comp_push'),
             TestComponent("comp_test")
         ]
 
-    def update_model(self, model):
-        self.model = model
+    def update_model(self, node_id, model, dataset_size):
+        if node_id not in self.selected_nodes:
+            return
+        self.components["comp_avg"].update_model(model, dataset_size)
 
     def get_peers(self, nodes: List[BaseNode]) -> List[BaseNode]:
-        return [node for node in nodes if node.id == self.server_id]
+        return random.sample(list(nodes), self.peer_size)
 
     def epoch_init(self, epoch: int):
-        pass
+        self.selected_nodes = self._select_peers(self.sample_size)
 
     def will_train(self, epoch: int) -> bool:
         will_train = False

@@ -9,16 +9,23 @@ class TestComponent(BaseComponent):
     def __init__(self, component_id, *args, **kwargs):
         super().__init__(component_id, *args, **kwargs)
 
-    def local_test(self, model, test_loader):
-        model.eval()
+    def pre_train(self, epoch: int):
+        pass
+
+    def train(self, epoch: int):
+        pass
+
+    def post_train(self, epoch: int):
+        self.node.model.eval()
         correct = 0
         total = 0
         with torch.no_grad():
-            for batch_idx, (data, targets) in enumerate(test_loader, 0):
+            for batch_idx, (data, targets) in enumerate(
+                    self.node.test_loader, 0):
                 data, targets = data.to(
                     self.node.device), targets.to(
                     self.node.device)
-                outputs = model(data)
+                outputs = self.node.model(data)
                 _, predicted = torch.max(outputs.data, 1)
                 total += targets.size(0)
                 correct += (predicted == targets).sum().item()

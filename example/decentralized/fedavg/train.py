@@ -1,6 +1,6 @@
 from torchvision.transforms import transforms
 
-from torchfed.centralized.trainer import FedAvgTrainer
+from torchfed.decentralized.trainer import FedAvgTrainer
 from torchfed.datasets.CIFAR10 import CIFAR10
 
 from torchfed.models.CIFARNet import CIFARNet
@@ -24,9 +24,9 @@ if __name__ == '__main__':
     model = CIFARNet()
 
     trainer = FedAvgTrainer(params={
-        "server_id": "server",
-        "client_id": "client",
+        "node_id": "node",
         "world_size": num_users,
+        "peer_size": 10,
         "sample_size": 5,
         "model": model,
         "dataset": dataset,

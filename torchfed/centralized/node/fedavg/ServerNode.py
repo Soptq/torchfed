@@ -1,10 +1,8 @@
 import random
 from typing import List
 
-import torch.nn
-
 from torchfed.base.component import BaseComponent
-from torchfed.centralized.component import AverageComponent
+from torchfed.component import AverageComponent
 from torchfed.base.node import BaseNode
 
 
@@ -29,21 +27,16 @@ class ServerNode(BaseNode):
             AverageComponent("comp_avg")
         ]
 
-    def update_model(self, model, dataset_size):
+    def update_model(self, node_id, model, dataset_size):
+        if node_id not in self.selected_nodes:
+            return
         self.components["comp_avg"].update_model(model, dataset_size)
 
     def get_peers(self, nodes: List[BaseNode]) -> List[BaseNode]:
         return nodes
 
-    def will_train(self, epoch: int) -> bool:
+    def epoch_init(self, epoch: int):
         self.selected_nodes = self._select_peers(self.sample_size)
+
+    def will_train(self, epoch: int) -> bool:
         return True
-
-    def pre_train(self, epoch: int):
-        pass
-
-    def train(self, epoch: int):
-        self.components["comp_avg"].average(self.model)
-
-    def post_train(self, epoch: int):
-        pass

@@ -11,7 +11,7 @@ from torchfed.centralized.node.fedavg import ServerNode, ClientNode
 from torchfed.utils.cuda import recommend_gpu, get_eligible_gpus
 
 
-class Trainer(BaseTrainer):
+class FedAvgTrainer(BaseTrainer):
     def __init__(
             self,
             *args,
