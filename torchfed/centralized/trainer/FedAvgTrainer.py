@@ -63,6 +63,8 @@ class FedAvgTrainer(BaseTrainer):
 
     def post_train(self):
         for node in self.nodes:
+            self.logger.info(f"{node.node_id} communication send size: {node.backend.communication_send_size} bytes,"
+                             f"communication recv size: {node.backend.communication_recv_size} bytes")
             if not node.node_id.startswith(self.server_id):
                 continue
             model = node.model

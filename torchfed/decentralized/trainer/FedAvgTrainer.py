@@ -59,6 +59,7 @@ class FedAvgTrainer(BaseTrainer):
 
     def post_train(self):
         for node in self.nodes:
+            self.logger.info(f"{node.node_id} communication size: {node.backend.communication_size} bytes")
             model = node.model
             model.eval()
             test_dataset = self.dataset.get_bundle_dataset()[1]
