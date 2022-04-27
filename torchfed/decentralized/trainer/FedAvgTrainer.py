@@ -17,31 +17,17 @@ class FedAvgTrainer(BaseTrainer):
             *args,
             **kwargs):
         super().__init__(*args, **kwargs)
-
-    def _process_params(self):
-        setattr(self, "cuda", False)
-        for param in self.params.keys():
-            setattr(self, param, self.params[param])
-        if self.cuda and self.gpus:
-            assert isinstance(self.gpus, list), "gpus must be a list"
-            self.available_gpus = get_eligible_gpus(self.gpus)
-            self.cuda &= len(self.available_gpus) > 0
-        self.device = "cuda:{}".format(recommend_gpu(
-            self.available_gpus)) if self.cuda else "cpu"
-        return 0
-
-    def generate_backend(self) -> LocalBackend:
-        return LocalBackend(self.logger)
-
-    def generate_nodes(self) -> List[BaseNode]:
-        nodes = []
+        self._process_cuda_params()
+        # add nodes
         for index in range(self.world_size):
-            client_node = FedAvgNode(
-                f"{self.node_id}_{index}",
+            self.add_node(
+                FedAvgNode,
+                True,
                 params={
                     "sample_size": self.sample_size,
                     "peer_size": self.peer_size,
-                    "model": copy.deepcopy(self.model),
+                    "model": copy.deepcopy(
+                        self.model),
                     "train_dataset": self.dataset.get_user_dataset(index)[0],
                     "test_dataset": self.dataset.get_user_dataset(index)[1],
                     "device": f"cuda:{recommend_gpu(self.available_gpus)}" if self.cuda else "cpu",
@@ -49,12 +35,16 @@ class FedAvgTrainer(BaseTrainer):
                     "batch_size": self.batch_size,
                     "local_iterations": self.local_iterations,
                 })
-            nodes.append(client_node)
 
-        return nodes
-
-    def pre_train(self):
-        pass
+    def _process_cuda_params(self):
+        if not hasattr(self, 'cuda'):
+            setattr(self, 'cuda', False)
+        if self.cuda and hasattr(self, 'gpus'):
+            assert isinstance(self.gpus, list), "gpus must be a list"
+            self.available_gpus = get_eligible_gpus(self.gpus)
+            self.cuda &= len(self.available_gpus) > 0
+        setattr(self, 'device', "cuda:{}".format(recommend_gpu(
+            self.available_gpus)) if self.cuda else "cpu")
 
     def post_train(self):
         for node in self.nodes:

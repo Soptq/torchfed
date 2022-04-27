@@ -1,10 +1,8 @@
+import random
 import sys
 from abc import abstractmethod, ABC
 import datetime
-from typing import List
 
-from torchfed.base.backend.BaseBackend import BaseBackend
-from torchfed.base.node import BaseNode
 from torchfed.logging import get_logger
 from torchfed.utils.hash import hex_hash
 
@@ -13,30 +11,12 @@ from tqdm import tqdm
 
 class BaseTrainer(ABC):
     def __init__(self, *args, **kwargs):
+        # bind params
         self.args = args
         self.kwargs = kwargs
+        self._bind_params()
 
-        if 'params' in kwargs:
-            self.params = self.kwargs['params']
-            if len(self.params) > 0:
-                self._process_params()
-        self.logger = None
-        self._setup_logger()
-
-        self.backend: BaseBackend = self.generate_backend()
-        # Initializing Nodes
-        self.nodes = self.generate_nodes()
-
-        self.backend.pre_register_node()
-        for node in self.nodes:
-            self.backend.register_node(node)
-        self.backend.post_register_node()
-
-    def _process_params(self):
-        for param in self.params.keys():
-            setattr(self, param, self.params[param])
-
-    def _setup_logger(self):
+        # initialize logger
         formatted_params = {}
         for param, value in self.params.items():
             if isinstance(value, str):
@@ -45,42 +25,67 @@ class BaseTrainer(ABC):
                 formatted_params[param] = f"{value:.5f}"
             elif hasattr(value, 'name'):
                 formatted_params[param] = f"{value.name}"
-        self.logger = get_logger(
-            f"{hex_hash(str(formatted_params))}-{datetime.datetime.now()}")
+        self.trainer_id = hex_hash(
+            f"{str(formatted_params)}-{datetime.datetime.now()}")
+        self.logger = get_logger(self.trainer_id, "Trainer")
         self.logger.info(f"Trainer Parameters: {formatted_params}")
 
+        # initialize Nodes
+        self.name_resolver = {}
+        self.nodes = []
+        self.shuffle_nodes = {}
+
+    def _bind_params(self):
+        if 'params' not in self.kwargs:
+            return
+        self.params = self.kwargs['params']
+        if len(self.params) == 0:
+            return
+        for param in self.params.keys():
+            setattr(self, param, self.params[param])
+
+    def add_node(self, node, shuffle, *args, **kwargs):
+        if node.__name__ in self.name_resolver:
+            self.name_resolver[node.__name__] += 1
+        else:
+            self.name_resolver[node.__name__] = 0
+        node_id = f"{node.__name__}-{self.name_resolver[node.__name__]}"
+        self.nodes.append(node(self.trainer_id, node_id, *args, **kwargs))
+        self.shuffle_nodes[node_id] = shuffle
+        return node_id
+
+    def pre_train(self):
+        pass
+
     def train(self, epochs: int):
+        for node in self.nodes:
+            node.backend.register_nodes(self.nodes)
+
         self.pre_train()
         for epoch in tqdm(
                 range(epochs),
                 file=sys.stdout,
                 leave=False,
                 desc="Global Training"):
+            # shuffle nodes list for randomness
+            exec_nodes = []
+            shuffle_nodes = [
+                node for node in self.nodes if self.shuffle_nodes[node.node_id]]
+            random.shuffle(shuffle_nodes)
             for node in self.nodes:
-                node.epoch_init(epoch)
-            ready_nodes = [
-                node for node in self.backend.get_nodes() if node.will_train(epoch)]
+                if self.shuffle_nodes[node.node_id]:
+                    exec_nodes.append(shuffle_nodes.pop())
+                else:
+                    exec_nodes.append(node)
 
-            for node in ready_nodes:
+            # train
+            for node in exec_nodes:
                 node.pre_train(epoch)
-            for node in ready_nodes:
+            for node in exec_nodes:
                 node.train(epoch)
-            for node in ready_nodes:
+            for node in exec_nodes:
                 node.post_train(epoch)
         self.post_train()
 
-    @abstractmethod
-    def generate_backend(self) -> BaseBackend:
-        pass
-
-    @abstractmethod
-    def generate_nodes(self) -> List[BaseNode]:
-        pass
-
-    @abstractmethod
-    def pre_train(self):
-        pass
-
-    @abstractmethod
     def post_train(self):
         pass

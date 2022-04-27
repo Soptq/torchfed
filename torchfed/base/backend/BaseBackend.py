@@ -1,33 +1,27 @@
 from __future__ import annotations
 from abc import abstractmethod, ABC
 
-from typing import TYPE_CHECKING, List
-
-if TYPE_CHECKING:
-    from torchfed.base.node.BaseNode import BaseNode
-
 
 class BaseBackend(ABC):
-    def __init__(self, logger):
-        self.logger = logger
+    def __init__(self, node_id):
+        self.node_id = node_id
+        self.callback = None
+
+    @abstractmethod
+    def register_nodes(self, nodes):
+        pass
+
+    def add_listener(self, callback):
+        self.callback = callback
+
+    @abstractmethod
+    def call(self, to, func, *args, **kwargs):
         pass
 
     @abstractmethod
-    def pre_register_node(self):
+    def broadcast(self, func, *args, **kwargs):
         pass
 
     @abstractmethod
-    def register_node(self, node: "BaseNode"):
-        pass
-
-    @abstractmethod
-    def post_register_node(self):
-        pass
-
-    @abstractmethod
-    def get_node(self, node_id: str) -> "BaseNode":
-        pass
-
-    @abstractmethod
-    def get_nodes(self) -> List["BaseNode"]:
+    def on_call(self, _from, func, *args, **kwargs):
         pass

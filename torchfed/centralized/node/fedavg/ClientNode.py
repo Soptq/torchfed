@@ -4,17 +4,18 @@ import torch.nn
 import torch.optim as optim
 
 from torchfed.base.component import BaseComponent
-from torchfed.component import TrainComponent, TestComponent, PullFromOthersComponent, PushToOthersComponent
-from torchfed.base.node import BaseNode
+from torchfed.component import TrainComponent, TestComponent, PullFromServerComponent, PushToPeersComponent
+from torchfed.base.node import BaseNode, ComponentStage
 
 
 class ClientNode(BaseNode):
     def __init__(
             self,
+            trainer_id: str,
             node_id: str,
             *args,
             **kwargs):
-        super().__init__(node_id, *args, **kwargs)
+        super().__init__(trainer_id, node_id, *args, **kwargs)
         self.model = self.model.to(self.device)
         self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr)
         self.loss_fn = torch.nn.CrossEntropyLoss()
@@ -25,25 +26,24 @@ class ClientNode(BaseNode):
         self.test_loader = torch.utils.data.DataLoader(
             self.test_dataset, batch_size=self.batch_size, shuffle=True)
 
-    def generate_components(self) -> List[BaseComponent]:
-        return [
-            PullFromOthersComponent("comp_pull"),
-            TrainComponent("comp_train"),
-            PushToOthersComponent("comp_push"),
-            TestComponent("comp_test")
-        ]
-
-    def update_model(self, model):
-        self.model = model
-
-    def get_peers(self, nodes: List[BaseNode]) -> List[BaseNode]:
-        return [node for node in nodes if node.id == self.server_id]
-
-    def epoch_init(self, epoch: int):
-        pass
-
-    def will_train(self, epoch: int) -> bool:
-        will_train = False
-        for peer in self.peers:
-            will_train |= (self.id in peer.selected_nodes)
-        return will_train
+        self.add_component(PullFromServerComponent("comp_pull",
+                                                   ComponentStage.PRE_TRAIN,
+                                                   self.model,
+                                                   self.server_id))
+        self.add_component(TrainComponent("comp_train",
+                                          ComponentStage.TRAIN,
+                                          self.model,
+                                          self.train_loader,
+                                          self.local_iterations,
+                                          self.optimizer,
+                                          self.loss_fn,
+                                          self.device))
+        self.add_component(PushToPeersComponent("comp_push",
+                                                ComponentStage.POST_TRAIN,
+                                                self.model,
+                                                self.dataset_size))
+        self.add_component(TestComponent("comp_test",
+                                         ComponentStage.POST_TRAIN,
+                                         self.model,
+                                         self.test_loader,
+                                         self.device))

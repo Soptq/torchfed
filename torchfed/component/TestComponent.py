@@ -6,28 +6,25 @@ import torch
 
 
 class TestComponent(BaseComponent):
-    def __init__(self, component_id, *args, **kwargs):
-        super().__init__(component_id, *args, **kwargs)
+    def __init__(self, component_id, stage, model, data_loader, device):
+        super().__init__(component_id, stage)
+        self.model = model
+        self.data_loader = data_loader
+        self.device = device
 
-    def pre_train(self, epoch: int):
-        pass
-
-    def train(self, epoch: int):
-        pass
-
-    def post_train(self, epoch: int):
-        self.node.model.eval()
+    def execute(self, epoch: int):
+        self.model.eval()
         correct = 0
         total = 0
         with torch.no_grad():
             for batch_idx, (data, targets) in enumerate(
-                    self.node.test_loader, 0):
+                    self.data_loader, 0):
                 data, targets = data.to(
-                    self.node.device), targets.to(
-                    self.node.device)
-                outputs = self.node.model(data)
+                    self.device), targets.to(
+                    self.device)
+                outputs = self.model(data)
                 _, predicted = torch.max(outputs.data, 1)
                 total += targets.size(0)
                 correct += (predicted == targets).sum().item()
-        self.node.logger.info(
-            f'[{self.node.id}] Test Accuracy: {100 * correct // total} %')
+        self.logger.info(
+            f'[{self.node_id}] Test Accuracy: {100 * correct // total} %')

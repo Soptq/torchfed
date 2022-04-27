@@ -24,8 +24,6 @@ if __name__ == '__main__':
     model = CIFARNet()
 
     trainer = FedAvgTrainer(params={
-        "server_id": "server",
-        "client_id": "client",
         "world_size": num_users,
         "sample_size": 5,
         "model": model,

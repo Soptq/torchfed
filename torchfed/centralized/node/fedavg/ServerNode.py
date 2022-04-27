@@ -1,42 +1,29 @@
 import random
 from typing import List
 
-from torchfed.base.component import BaseComponent
-from torchfed.component import AverageComponent
-from torchfed.base.node import BaseNode
+from torchfed.component import AverageComponent, PullFromServerComponentCompatible, PushToPeersComponentCompatible
+from torchfed.base.node import BaseNode, ComponentStage
 
 
-class ServerNode(BaseNode):
+class ServerNode(
+        BaseNode,
+        PullFromServerComponentCompatible,
+        PushToPeersComponentCompatible):
     def __init__(
             self,
+            trainer_id: str,
             node_id: str,
             *args,
             **kwargs):
-        super().__init__(node_id, *args, **kwargs)
+        super().__init__(trainer_id, node_id, *args, **kwargs)
         self.model = self.model.to(self.device)
-        self.selected_nodes = []
+        self.add_component(AverageComponent("comp_avg",
+                                            ComponentStage.PRE_TRAIN,
+                                            self.model,
+                                            self.sample_size))
 
-    def _select_peers(self, num_samples=-1):
-        if num_samples < 0:
-            num_samples = len(self.peers)
-        selected_nodes = random.sample(list(self.peers), num_samples)
-        return [node.id for node in selected_nodes]
+    def get_model(self, _from):
+        return self.model
 
-    def generate_components(self) -> List[BaseComponent]:
-        return [
-            AverageComponent("comp_avg")
-        ]
-
-    def update_model(self, node_id, model, dataset_size):
-        if node_id not in self.selected_nodes:
-            return
+    def update_model(self, _from, model, dataset_size):
         self.components["comp_avg"].update_model(model, dataset_size)
-
-    def get_peers(self, nodes: List[BaseNode]) -> List[BaseNode]:
-        return nodes
-
-    def epoch_init(self, epoch: int):
-        self.selected_nodes = self._select_peers(self.sample_size)
-
-    def will_train(self, epoch: int) -> bool:
-        return True

@@ -1,37 +1,29 @@
-from torchfed.base.node.BaseNode import BaseNode
+from typing import Callable
+
 from torchfed.base.backend import BaseBackend
 
 
 class LocalBackend(BaseBackend):
-    def __init__(self, logger):
-        super().__init__(logger)
-        self.nodes = {}
+    def __init__(self, node_id):
+        super().__init__(node_id)
+        self.index = {}
 
-    def pre_register_node(self):
-        pass
+    def register_nodes(self, nodes, num_samples=-1):
+        for node in nodes:
+            self.index[node.node_id] = node.backend
 
-    def register_node(self, node: BaseNode):
-        if node.id in self.nodes:
-            raise Exception(f"Node with id {node.id} already registered")
-        self.nodes[node.id] = node
+    def call(self, to, func, *args, **kwargs):
+        if to not in self.index:
+            raise Exception("Node {} not registered".format(to))
+        if hasattr(func, '__name__'):
+            return self.index[to].on_call(
+                self.node_id, func.__name__, *args, **kwargs)
+        else:
+            return self.index[to].on_call(self.node_id, func, *args, **kwargs)
 
-    def post_register_node(self):
-        for node in self.get_nodes():
-            node.bind(self)
+    def broadcast(self, func, *args, **kwargs):
+        for backend in self.index.values():
+            backend.on_call(self.node_id, func, *args, **kwargs)
 
-    def get_node(self, node_id: str):
-        if node_id not in self.nodes:
-            raise Exception(f"Node with id {node_id} not registered")
-        return self.nodes[node_id]
-
-    def get_nodes(self):
-        return self.nodes.values()
-
-    def get_nodes_by_components_type(self, component_type):
-        nodes = {}
-        for node_id, node in self.nodes.items():
-            for component in node.components.values():
-                if isinstance(component, component_type):
-                    nodes[node_id] = node
-                    continue
-        return nodes
+    def on_call(self, _from, func, *args, **kwargs):
+        return self.callback(_from, func, *args, **kwargs)

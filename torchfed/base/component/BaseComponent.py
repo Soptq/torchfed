@@ -1,36 +1,21 @@
 from __future__ import annotations
 
 from abc import abstractmethod, ABC
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from torchfed.base.node.BaseNode import BaseNode
 
 
 class BaseComponent(ABC):
-    def __init__(self, component_id, *args, **kwargs):
-        self.id = component_id
-        if 'params' in kwargs:
-            self.params = kwargs['params']
-            if len(self.params) > 0:
-                self._process_params()
-        self.node: "BaseNode" | None = None
+    def __init__(self, component_id, stage):
+        self.stage = stage
+        self.component_id = component_id
+        self.node_id = None
+        self.backend = None
+        self.logger = None
 
-    def _process_params(self):
-        for param in self.params.keys():
-            setattr(self, param, self.params[param])
-
-    def bind(self, node: "BaseNode"):
-        self.node = node
+    def bind_context(self, node_id, backend, logger):
+        self.node_id = node_id
+        self.backend = backend
+        self.logger = logger
 
     @abstractmethod
-    def pre_train(self, epoch: int):
-        pass
-
-    @abstractmethod
-    def train(self, epoch: int):
-        pass
-
-    @abstractmethod
-    def post_train(self, epoch: int):
+    def execute(self, epoch: int):
         pass

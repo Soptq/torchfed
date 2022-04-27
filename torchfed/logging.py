@@ -2,7 +2,7 @@ from loguru import logger
 from tqdm import tqdm
 
 
-def get_logger(name, level="INFO"):
+def get_logger(sub_dir, name, level="INFO"):
     """
     Get a logger with the given name and level.
     """
@@ -15,7 +15,7 @@ def get_logger(name, level="INFO"):
         level=level,
     )
     logger.add(
-        "logs/{name}.log".format(name=name),
+        "logs/{sub_dir}/{name}.log".format(sub_dir=sub_dir, name=name),
         backtrace=True,
         diagnose=True,
         level=level,
