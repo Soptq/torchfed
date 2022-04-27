@@ -30,6 +30,7 @@ class FedAvgTrainer(BaseTrainer):
                 ClientNode,
                 True,
                 params={
+                    "sample_size": self.sample_size,
                     "server_id": self.server_id,
                     "model": copy.deepcopy(
                         self.model),

@@ -47,17 +47,17 @@ class BaseNode(ABC):
         component.bind_context(self.node_id, self.backend, self.logger)
         self.components[component.component_id] = component
 
-    def pre_train(self, epoch: int):
+    def pre_train(self, epoch: int, order: int):
         for component in self.components.values():
             if component.stage == ComponentStage.PRE_TRAIN:
                 component.execute(epoch)
 
-    def train(self, epoch: int):
+    def train(self, epoch: int, order: int):
         for component in self.components.values():
             if component.stage == ComponentStage.TRAIN:
                 component.execute(epoch)
 
-    def post_train(self, epoch: int):
+    def post_train(self, epoch: int, order: int):
         for component in self.components.values():
             if component.stage == ComponentStage.POST_TRAIN:
                 component.execute(epoch)

@@ -84,12 +84,12 @@ class BaseTrainer(ABC):
                     exec_nodes.append(node)
 
             # train
-            for node in exec_nodes:
-                node.pre_train(epoch)
-            for node in exec_nodes:
-                node.train(epoch)
-            for node in exec_nodes:
-                node.post_train(epoch)
+            for order, node in enumerate(exec_nodes):
+                node.pre_train(epoch, order)
+            for order, node in enumerate(exec_nodes):
+                node.train(epoch, order)
+            for order, node in enumerate(exec_nodes):
+                node.post_train(epoch, order)
         self.post_train()
 
     def post_train(self):

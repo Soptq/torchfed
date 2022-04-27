@@ -47,3 +47,18 @@ class ClientNode(BaseNode):
                                          self.model,
                                          self.test_loader,
                                          self.device))
+
+    def pre_train(self, epoch: int, order: int):
+        if order > self.sample_size + 1:    # 1 server
+            return
+        super().pre_train(epoch, order)
+
+    def train(self, epoch: int, order: int):
+        if order > self.sample_size + 1:    # 1 server
+            return
+        super().train(epoch, order)
+
+    def post_train(self, epoch: int, order: int):
+        if order > self.sample_size + 1:    # 1 server
+            return
+        super().post_train(epoch, order)
