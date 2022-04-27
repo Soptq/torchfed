@@ -71,7 +71,8 @@ class BaseTrainer(ABC):
             # build connection graph
             connections = self.build_graph(epoch, len(self.nodes))
             for node, connections in zip(self.nodes, connections):
-                node.backend.set_peers([node for index, node in enumerate(self.nodes) if connections[index]])
+                node.backend.set_peers(
+                    [node for index, node in enumerate(self.nodes) if connections[index]])
             # shuffle nodes list for randomness
             exec_nodes = []
             shuffle_nodes = [

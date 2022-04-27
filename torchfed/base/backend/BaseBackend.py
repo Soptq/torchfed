@@ -44,5 +44,10 @@ class BaseBackend(ABC):
     def broadcast(self, func, *args, **kwargs):
         results = []
         for backend in self.index.values():
-            results.append(backend.on_call(self.node_id, func, *args, **kwargs))
+            results.append(
+                backend.on_call(
+                    self.node_id,
+                    func,
+                    *args,
+                    **kwargs))
         return results
