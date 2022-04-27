@@ -54,19 +54,24 @@ class BaseTrainer(ABC):
         self.shuffle_nodes[node_id] = shuffle
         return node_id
 
+    def build_graph(self, epoch, size):
+        # by default all nodes are densely connected
+        return [[True for _ in range(size)] for _ in range(size)]
+
     def pre_train(self):
         pass
 
     def train(self, epochs: int):
-        for node in self.nodes:
-            node.backend.register_nodes(self.nodes)
-
         self.pre_train()
         for epoch in tqdm(
                 range(epochs),
                 file=sys.stdout,
                 leave=False,
                 desc="Global Training"):
+            # build connection graph
+            connections = self.build_graph(epoch, len(self.nodes))
+            for node, connections in zip(self.nodes, connections):
+                node.backend.set_peers([node for index, node in enumerate(self.nodes) if connections[index]])
             # shuffle nodes list for randomness
             exec_nodes = []
             shuffle_nodes = [

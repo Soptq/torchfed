@@ -66,3 +66,5 @@ class BaseNode(ABC):
         if hasattr(self, func):
             self.logger.info(f'{self.node_id} is calling {func} by {_from}')
             return getattr(self, func)(_from, *args, **kwargs)
+        else:
+            self.logger.error(f'{self.node_id} does not have {func}')

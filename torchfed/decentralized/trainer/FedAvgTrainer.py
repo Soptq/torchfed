@@ -1,3 +1,4 @@
+import random
 from typing import List
 import copy
 
@@ -45,6 +46,16 @@ class FedAvgTrainer(BaseTrainer):
             self.cuda &= len(self.available_gpus) > 0
         setattr(self, 'device', "cuda:{}".format(recommend_gpu(
             self.available_gpus)) if self.cuda else "cpu")
+
+    def build_graph(self, epoch, size):
+        connections = []
+        for i in range(size):
+            default = [True for _ in range(size)]
+            connected = random.sample(list(range(size)), self.peer_size)
+            for j in connected:
+                default[j] = True
+            connections.append(default)
+        return connections
 
     def post_train(self):
         for node in self.nodes:

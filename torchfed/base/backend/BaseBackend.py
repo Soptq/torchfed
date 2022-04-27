@@ -8,7 +8,7 @@ class BaseBackend(ABC):
         self.callback = None
 
     @abstractmethod
-    def register_nodes(self, nodes):
+    def set_peers(self, nodes):
         pass
 
     def add_listener(self, callback):

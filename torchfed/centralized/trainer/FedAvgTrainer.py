@@ -51,9 +51,18 @@ class FedAvgTrainer(BaseTrainer):
         setattr(self, 'device', "cuda:{}".format(recommend_gpu(
             self.available_gpus)) if self.cuda else "cpu")
 
+    def build_graph(self, epoch, size):
+        connections = []
+        for i in range(size):
+            if i == 0:
+                connections.append([True for _ in range(size)])
+            else:
+                connections.append([True] + [False for _ in range(size - 1)])
+        return connections
+
     def post_train(self):
         for node in self.nodes:
-            if not node.id.startswith(self.server_id):
+            if not node.node_id.startswith(self.server_id):
                 continue
             model = node.model
             model.eval()

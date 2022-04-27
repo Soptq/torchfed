@@ -8,7 +8,7 @@ class LocalBackend(BaseBackend):
         super().__init__(node_id)
         self.index = {}
 
-    def register_nodes(self, nodes, num_samples=-1):
+    def set_peers(self, nodes):
         for node in nodes:
             self.index[node.node_id] = node.backend
 
