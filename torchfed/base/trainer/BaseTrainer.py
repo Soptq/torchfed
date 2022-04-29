@@ -58,6 +58,9 @@ class BaseTrainer(ABC):
         # by default all nodes are densely connected
         return [[True for _ in range(size)] for _ in range(size)]
 
+    def sort_nodes(self, nodes):
+        return random.shuffle(nodes)
+
     def pre_train(self):
         pass
 
@@ -77,7 +80,7 @@ class BaseTrainer(ABC):
             exec_nodes = []
             shuffle_nodes = [
                 node for node in self.nodes if self.shuffle_nodes[node.node_id]]
-            random.shuffle(shuffle_nodes)
+            shuffle_nodes = self.sort_nodes(shuffle_nodes)
             for node in self.nodes:
                 if self.shuffle_nodes[node.node_id]:
                     exec_nodes.append(shuffle_nodes.pop())
