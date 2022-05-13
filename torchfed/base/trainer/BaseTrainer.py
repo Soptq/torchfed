@@ -59,7 +59,8 @@ class BaseTrainer(ABC):
         return [[True for _ in range(size)] for _ in range(size)]
 
     def sort_nodes(self, nodes):
-        return random.shuffle(nodes)
+        random.shuffle(nodes)
+        return nodes
 
     def pre_train(self):
         pass
