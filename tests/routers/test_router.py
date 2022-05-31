@@ -15,7 +15,8 @@ class TestSubSubModule(Module):
 class TestSubModule(Module):
     def __init__(self, name, router, debug=False):
         super(TestSubModule, self).__init__(name, router, debug)
-        self.submodule = self.register_submodule(TestSubSubModule, "submodule", router)
+        self.submodule = self.register_submodule(
+            TestSubSubModule, "submodule", router)
 
     @exposed
     def execute(self):
@@ -25,7 +26,8 @@ class TestSubModule(Module):
 class TestMainModule(Module):
     def __init__(self, name, router, debug=False):
         super(TestMainModule, self).__init__(name, router, debug)
-        self.submodule = self.register_submodule(TestSubModule, "submodule", router)
+        self.submodule = self.register_submodule(
+            TestSubModule, "submodule", router)
 
     @exposed
     def execute(self):
@@ -75,7 +77,10 @@ def test_connectivity_subsubmodule_local():
     module_a = TestMainModule("alice", router_a, debug=DEBUG)
     module_b = TestMainModule("bob", router_a, debug=DEBUG)
 
-    resp_a = module_a.send(to="bob", path="submodule/submodule/execute", args=())[0]
+    resp_a = module_a.send(
+        to="bob",
+        path="submodule/submodule/execute",
+        args=())[0]
     assert resp_a.from_ == "bob"
     assert resp_a.to == "alice"
     assert resp_a.data == "SubSubModule Executing"

@@ -32,7 +32,8 @@ class FedAvgNode(Module):
             config.num_labels,
             download=True,
             transform=transform)
-        [self.train_dataset, self.test_dataset] = dataset.get_user_dataset(rank)
+        [self.train_dataset,
+         self.test_dataset] = dataset.get_user_dataset(rank)
         self.global_test_dataset = dataset.get_bundle_dataset()[1]
         self.train_loader = torch.utils.data.DataLoader(
             self.train_dataset, batch_size=config.batch_size, shuffle=True)
@@ -45,14 +46,24 @@ class FedAvgNode(Module):
         self.optimizer = optim.Adam(self.model.parameters(), lr=config.lr)
         self.loss_fn = torch.nn.CrossEntropyLoss()
 
-        self.distributor = self.register_submodule(WeightedDataDistributing, "distributor", router)
-        self.trainer = self.register_submodule(Trainer, "trainer", router, self.model, self.train_loader,
-                                               self.optimizer, self.loss_fn)
-        self.tester = self.register_submodule(Tester, "tester", router, self.model, self.test_loader)
-        self.global_tester = self.register_submodule(Tester, "global_tester", router, self.model, self.global_test_loader)
+        self.distributor = self.register_submodule(
+            WeightedDataDistributing, "distributor", router)
+        self.trainer = self.register_submodule(
+            Trainer,
+            "trainer",
+            router,
+            self.model,
+            self.train_loader,
+            self.optimizer,
+            self.loss_fn)
+        self.tester = self.register_submodule(
+            Tester, "tester", router, self.model, self.test_loader)
+        self.global_tester = self.register_submodule(
+            Tester, "global_tester", router, self.model, self.global_test_loader)
 
         if bootstrap_from is not None:
-            global_model = self.send(bootstrap_from, "distributor/download", ())[0].data
+            global_model = self.send(
+                bootstrap_from, "distributor/download", ())[0].data
             self.model.load_state_dict(global_model)
 
         self.distributor.update(self.model.state_dict())
@@ -68,7 +79,7 @@ class FedAvgNode(Module):
             self.model.load_state_dict(aggregated)
         self.distributor.update(aggregated)
         yield True
-        # train and test
+        # train and tests
         self.global_tester()
         self.tester()
         for i in range(config.local_iterations):
@@ -76,7 +87,12 @@ class FedAvgNode(Module):
         yield True
         # upload to peers
         for peer in router.get_peers(self):
-            self.send(peer, "distributor/upload", (self.name, self.dataset_size, self.model.state_dict()))
+            self.send(
+                peer,
+                "distributor/upload",
+                (self.name,
+                 self.dataset_size,
+                 self.model.state_dict()))
         yield False
 
 
@@ -88,7 +104,10 @@ if __name__ == '__main__':
 
     nodes = []
     for rank in range(config.num_users):
-        connected_peers = [f"node_{peer_rank}" for peer_rank in random.sample(range(config.num_users), 5)]
+        connected_peers = [
+            f"node_{peer_rank}" for peer_rank in random.sample(
+                range(
+                    config.num_users), 5)]
         print(f"node {rank} will connect to {connected_peers}")
         nodes.append(FedAvgNode(f"node_{rank}", router, rank,
                                 connected_peers,

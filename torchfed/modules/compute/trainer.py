@@ -2,7 +2,15 @@ from torchfed.modules.module import Module
 
 
 class Trainer(Module):
-    def __init__(self, name, router, model, dataloader, optimizer, loss_fn, debug=False):
+    def __init__(
+            self,
+            name,
+            router,
+            model,
+            dataloader,
+            optimizer,
+            loss_fn,
+            debug=False):
         super(Trainer, self).__init__(name, router, debug)
         self.model = model
         self.dataloader = dataloader

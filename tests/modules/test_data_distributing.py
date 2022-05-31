@@ -10,7 +10,8 @@ DEBUG = True
 class Server(Module):
     def __init__(self, name, router, debug=False):
         super(Server, self).__init__(name, router, debug)
-        self.distributor = self.register_submodule(DataDistributing, "distributor", router)
+        self.distributor = self.register_submodule(
+            DataDistributing, "distributor", router)
 
     @exposed
     def execute(self):
@@ -37,9 +38,11 @@ def test_data_distributing():
     for index, client in enumerate(clients):
         client.send("server", server.distributor.upload, (client.name, index))
 
-    aggregation = server.manual_call(server.distributor.aggregate, (), check_exposed=False)
+    aggregation = server.manual_call(
+        server.distributor.aggregate, (), check_exposed=False)
     assert aggregation == 2.0
-    server.manual_call(server.distributor.update, (aggregation,), check_exposed=False)
+    server.manual_call(server.distributor.update,
+                       (aggregation,), check_exposed=False)
 
     resp = clients[0].send("server", server.distributor.download, ())[0]
     assert resp.from_ == "server"

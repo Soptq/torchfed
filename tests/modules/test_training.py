@@ -37,8 +37,16 @@ class MainModule(Module):
         self.optimizer = optim.Adam(self.model.parameters(), lr=1e-3)
         self.loss_fn = torch.nn.CrossEntropyLoss()
 
-        self.trainer = self.register_submodule(Trainer, "trainer", router, self.model, self.train_loader, self.optimizer, self.loss_fn)
-        self.tester = self.register_submodule(Tester, "tester", router, self.model, self.test_loader)
+        self.trainer = self.register_submodule(
+            Trainer,
+            "trainer",
+            router,
+            self.model,
+            self.train_loader,
+            self.optimizer,
+            self.loss_fn)
+        self.tester = self.register_submodule(
+            Tester, "tester", router, self.model, self.test_loader)
 
     @exposed
     def execute(self):

@@ -35,9 +35,11 @@ class WeightedDataDistributing(Module):
             [weight, data] = data
             if isinstance(data, dict):
                 if ret is None:
-                    ret = {k: v * (weight / self.total_weight) for k, v in data.items()}
+                    ret = {k: v * (weight / self.total_weight)
+                           for k, v in data.items()}
                 else:
-                    ret = {k: ret[k] + v * (weight / self.total_weight) for k, v in data.items()}
+                    ret = {k: ret[k] + v * (weight / self.total_weight)
+                           for k, v in data.items()}
             else:
                 if ret is None:
                     ret = data * (weight / self.total_weight)

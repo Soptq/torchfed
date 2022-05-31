@@ -9,7 +9,13 @@ from .router_msg import RouterMsg
 class Router(abc.ABC):
     context = None
 
-    def __init__(self, rank, world_size, backend=None, rpc_backend_options=None, debug=False):
+    def __init__(
+            self,
+            rank,
+            world_size,
+            backend=None,
+            rpc_backend_options=None,
+            debug=False):
         if backend is None:
             backend = rpc.BackendType.TENSORPIPE
 
@@ -28,7 +34,8 @@ class Router(abc.ABC):
         self.owned_workers = {}
         self.peers_table = {}
 
-        torch.distributed.rpc.init_rpc(self.name, backend, rank, world_size, rpc_backend_options)
+        torch.distributed.rpc.init_rpc(
+            self.name, backend, rank, world_size, rpc_backend_options)
 
         if self.debug:
             print("Initialized completed")
@@ -59,7 +66,13 @@ class Router(abc.ABC):
             print(f"Router {self.rank} broadcasting message {router_msg}")
         futs, rets = [], []
         for rank in range(self.world_size):
-            futs.append(rpc.rpc_async(f"router_{rank}", Router.receive, args=(router_msg, )))
+            futs.append(
+                rpc.rpc_async(
+                    f"router_{rank}",
+                    Router.receive,
+                    args=(
+                        router_msg,
+                    )))
         for fut in futs:
             rets.append(fut.wait())
         return rets
@@ -67,7 +80,8 @@ class Router(abc.ABC):
     @staticmethod
     def receive(router_msg: RouterMsg):
         if Router.context.debug:
-            print(f"Router {Router.context.rank} receiving message {router_msg}")
+            print(
+                f"Router {Router.context.rank} receiving message {router_msg}")
         if router_msg.to in Router.context.owned_workers.keys():
             return Router.context.owned_workers[router_msg.to](router_msg)
         return None

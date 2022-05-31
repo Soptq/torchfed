@@ -36,10 +36,15 @@ class FedAvgServer(Module):
         self.test_loader = torch.utils.data.DataLoader(
             test_dataset, batch_size=config.batch_size, shuffle=True)
 
-        self.distributor = self.register_submodule(WeightedDataDistributing, "distributor", router)
-        self.tester = self.register_submodule(Tester, "tester", router, self.model, self.test_loader)
+        self.distributor = self.register_submodule(
+            WeightedDataDistributing, "distributor", router)
+        self.tester = self.register_submodule(
+            Tester, "tester", router, self.model, self.test_loader)
 
-        router.connect(self, [f"client_{_rank}" for _rank in range(config.num_users)])
+        router.connect(
+            self, [
+                f"client_{_rank}" for _rank in range(
+                    config.num_users)])
 
         self.distributor.update(self.model.state_dict())
 
@@ -70,7 +75,8 @@ class FedAvgClient(Module):
             config.num_labels,
             download=True,
             transform=transform)
-        [self.train_dataset, self.test_dataset] = dataset.get_user_dataset(rank)
+        [self.train_dataset,
+         self.test_dataset] = dataset.get_user_dataset(rank)
         self.train_loader = torch.utils.data.DataLoader(
             self.train_dataset, batch_size=config.batch_size, shuffle=True)
         self.test_loader = torch.utils.data.DataLoader(
@@ -80,21 +86,36 @@ class FedAvgClient(Module):
         self.optimizer = optim.Adam(self.model.parameters(), lr=config.lr)
         self.loss_fn = torch.nn.CrossEntropyLoss()
 
-        self.trainer = self.register_submodule(Trainer, "trainer", router, self.model, self.train_loader,
-                                               self.optimizer, self.loss_fn)
-        self.tester = self.register_submodule(Tester, "tester", router, self.model, self.test_loader)
+        self.trainer = self.register_submodule(
+            Trainer,
+            "trainer",
+            router,
+            self.model,
+            self.train_loader,
+            self.optimizer,
+            self.loss_fn)
+        self.tester = self.register_submodule(
+            Tester, "tester", router, self.model, self.test_loader)
 
         router.connect(self, ["server"])
 
     def execute(self):
-        global_model = self.send(router.get_peers(self)[0], "distributor/download", ())[0].data
+        global_model = self.send(
+            router.get_peers(self)[0],
+            "distributor/download",
+            ())[0].data
         self.model.load_state_dict(global_model)
 
         self.tester()
         for i in range(config.local_iterations):
             self.trainer()
 
-        self.send(router.get_peers(self)[0], "distributor/upload", (self.name, self.dataset_size, self.model.state_dict()))
+        self.send(
+            router.get_peers(self)[0],
+            "distributor/upload",
+            (self.name,
+             self.dataset_size,
+             self.model.state_dict()))
         yield False
 
 

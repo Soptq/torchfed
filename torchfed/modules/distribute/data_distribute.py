@@ -34,7 +34,8 @@ class DataDistributing(Module):
                 if ret is None:
                     ret = {k: v / len(self.storage) for k, v in data.items()}
                 else:
-                    ret = {k: ret[k] + v / len(self.storage) for k, v in data.items()}
+                    ret = {k: ret[k] + v / len(self.storage)
+                           for k, v in data.items()}
             else:
                 if ret is None:
                     ret = data / len(self.storage)

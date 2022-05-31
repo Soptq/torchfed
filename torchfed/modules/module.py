@@ -45,13 +45,20 @@ class Module(abc.ABC):
         if self.debug:
             print(f"Module {self.name} receiving data {router_msg}")
         if self.debug:
-            print(f"Module {self.name} is calling path {router_msg.path} with args {router_msg.args}")
+            print(
+                f"Module {self.name} is calling path {router_msg.path} with args {router_msg.args}")
 
-        ret = RouterMsgResponse(from_=self.name, to=router_msg.from_, data=self.manual_call(router_msg.path, router_msg.args))
+        ret = RouterMsgResponse(
+            from_=self.name,
+            to=router_msg.from_,
+            data=self.manual_call(
+                router_msg.path,
+                router_msg.args))
 
         if self.debug:
             if ret.data is None:
-                print(f"Module {self.name} does not have path {router_msg.path}")
+                print(
+                    f"Module {self.name} does not have path {router_msg.path}")
             print(f"Module {self.name} responses with data {ret}")
         return ret
 
@@ -63,10 +70,14 @@ class Module(abc.ABC):
         target = paths.pop(0)
 
         if target in self.routing_table:
-            return self.routing_table[target].manual_call("/".join(paths), args, check_exposed=check_exposed)
+            return self.routing_table[target].manual_call(
+                "/".join(paths), args, check_exposed=check_exposed)
         elif hasattr(self, target):
             entrance = getattr(self, target)
-            if callable(entrance) and (not check_exposed or (hasattr(entrance, "exposed") and entrance.exposed)):
+            if callable(entrance) and (
+                not check_exposed or (
+                    hasattr(
+                        entrance,
+                        "exposed") and entrance.exposed)):
                 return entrance(*args)
         return None
-
