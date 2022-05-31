@@ -1,5 +1,7 @@
 import abc
 
+from torch.utils.tensorboard import SummaryWriter
+
 from torchfed.routers.router_msg import RouterMsg, RouterMsgResponse
 from typing import TypeVar, Generic
 from torchfed.logging import get_logger
@@ -8,11 +10,17 @@ T = TypeVar('T')
 
 
 class Module(abc.ABC):
-    def __init__(self, name, router, debug=False):
+    def __init__(self, name, router, tensorboard=False, debug=False):
         self.name = name
         self.debug = debug
         self.router = router
-        self.logger = get_logger(name.split("/")[0])
+        self.logger = get_logger(router.ident, self.get_root_name())
+
+        self.tensorboard = tensorboard
+        if self.tensorboard:
+            if self.is_root():
+                self.logger.info(f"[{self.name}] Tensorboard enabled. Run `tensorboard --logdir=runs/{router.ident}` to start.")
+            self.writer = self.get_tensorboard_writer()
 
         self.routing_table = {}
 
@@ -35,7 +43,7 @@ class Module(abc.ABC):
         if submodule_name in self.routing_table:
             self.logger.error("Cannot register modules with the same name")
             raise Exception("Cannot register modules with the same name")
-        module_obj = module(submodule_name, router, *args, self.debug)
+        module_obj = module(submodule_name, router, *args, tensorboard=self.tensorboard, debug=self.debug)
         self.routing_table[name] = module_obj
         return module_obj
 
@@ -83,3 +91,16 @@ class Module(abc.ABC):
                         "exposed") and entrance.exposed)):
                 return entrance(*args)
         return None
+
+    def get_tensorboard_writer(self):
+        return SummaryWriter(log_dir=f"runs/{self.router.ident}/{self.get_root_name()}")
+
+    def is_root(self):
+        return "/" not in self.name
+
+    def get_root_name(self):
+        return self.name.split("/")[0]
+
+    def __del__(self):
+        if self.tensorboard:
+            self.writer.close()

@@ -1,10 +1,12 @@
 import abc
+import time
 
 import torch
 import torch.distributed.rpc as rpc
 
 from .router_msg import RouterMsg
 from torchfed.logging import get_logger
+from torchfed.utils.hash import hex_hash
 
 
 class Router(abc.ABC):
@@ -25,31 +27,29 @@ class Router(abc.ABC):
                 init_method="env://",
                 rpc_timeout=0
             )
-
         Router.context = self
         self.name = f"router_{rank}"
         self.rank = rank
         self.world_size = world_size
         self.debug = debug
-        self.logger = get_logger(self.name)
+        self.ident = hex_hash(f"{time.time_ns()}")
+        self.logger = get_logger(self.ident, self.name)
 
         self.owned_workers = {}
         self.peers_table = {}
-
         torch.distributed.rpc.init_rpc(
             self.name, backend, rank, world_size, rpc_backend_options)
 
-        if self.debug:
-            self.logger.debug(f"[{self.name}] Initialized completed")
+        self.logger.info(f"[{self.name}] Initialized completed: {self.ident}")
 
     def register(self, module):
-        if "/" in module.name:
+        if not module.is_root():
             return
         if module.name not in self.owned_workers.keys():
             self.owned_workers[module.name] = module.receive
 
     def connect(self, module, peers: list):
-        if "/" in module.name:
+        if not module.is_root():
             return
         if hasattr(self.peers_table, module.name):
             self.peers_table[module.name] += peers
@@ -57,9 +57,7 @@ class Router(abc.ABC):
             self.peers_table[module.name] = peers
 
     def get_peers(self, module):
-        name = module.name
-        if "/" in name:
-            name = name.split("/")[0]
+        name = module.get_root_name()
         return self.peers_table[name]
 
     def unregister(self, worker):

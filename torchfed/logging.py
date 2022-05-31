@@ -1,6 +1,5 @@
 from loguru import logger
 from tqdm import tqdm
-import datetime
 
 
 existed_logger_name = []
@@ -12,7 +11,9 @@ def make_filter(name):
     return _filter
 
 
-def get_logger(name, level="INFO"):
+def get_logger(router_id, name, level="INFO"):
+    if len(existed_logger_name) == 0:
+        logger.remove()
     if name in existed_logger_name:
         return logger.bind(name=name)
     logger.add(
@@ -23,9 +24,8 @@ def get_logger(name, level="INFO"):
         level=level,
         filter=make_filter(name)
     )
-    time_info = datetime.datetime.now().replace(microsecond=0).isoformat().replace(":", "-")
     logger.add(
-        "logs/{time_info}+{name}.log".format(time_info=time_info, name=name),
+        "logs/{router_id}/{name}.log".format(router_id=router_id, name=name),
         backtrace=True,
         diagnose=True,
         level=level,

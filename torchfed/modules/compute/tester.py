@@ -3,10 +3,11 @@ from torchfed.modules.module import Module
 
 
 class Tester(Module):
-    def __init__(self, name, router, model, dataloader, debug=False):
-        super(Tester, self).__init__(name, router, debug)
+    def __init__(self, name, router, model, dataloader, tensorboard=False, debug=False):
+        super(Tester, self).__init__(name, router, tensorboard=tensorboard, debug=debug)
         self.model = model
         self.dataloader = dataloader
+        self.num_tests = 0
 
     def execute(self):
         self.model.eval()
@@ -20,5 +21,8 @@ class Tester(Module):
                 _, predicted = torch.max(outputs.data, 1)
                 total += targets.size(0)
                 correct += (predicted == targets).sum().item()
-        self.logger.info(f'[{self.name}] Test Accuracy: {100 * correct // total} %')
+        self.logger.info(f'[{self.name}] Test Accuracy: {100 * correct / total:.3f} %')
+        if self.tensorboard:
+            self.writer.add_scalar("Accuracy/Test", 100 * correct / total, self.num_tests)
+        self.num_tests += 1
         yield False

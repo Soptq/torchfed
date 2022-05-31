@@ -18,8 +18,8 @@ import config
 
 
 class FedAvgNode(Module):
-    def __init__(self, name, router, rank, peers, bootstrap_from, debug=False):
-        super(FedAvgNode, self).__init__(name, router, debug)
+    def __init__(self, name, router, rank, peers, bootstrap_from, tensorboard=False, debug=False):
+        super(FedAvgNode, self).__init__(name, router, tensorboard=tensorboard, debug=debug)
         self.model = CIFARNet()
 
         transform = transforms.Compose([
@@ -111,7 +111,8 @@ if __name__ == '__main__':
         print(f"node {rank} will connect to {connected_peers}")
         nodes.append(FedAvgNode(f"node_{rank}", router, rank,
                                 connected_peers,
-                                f"node_{rank - 1}" if rank > 0 else None))
+                                f"node_{rank - 1}" if rank > 0 else None,
+                                tensorboard=True))
 
     # train
     for epoch in range(config.num_epochs):
