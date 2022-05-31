@@ -1,23 +1,35 @@
 from loguru import logger
 from tqdm import tqdm
+import datetime
 
 
-def get_logger(sub_dir, name, level="INFO"):
-    """
-    Get a logger with the given name and level.
-    """
-    logger.remove()
+existed_logger_name = []
+
+
+def make_filter(name):
+    def _filter(record):
+        return record["extra"].get("name") == name
+    return _filter
+
+
+def get_logger(name, level="INFO"):
+    if name in existed_logger_name:
+        return logger.bind(name=name)
     logger.add(
         lambda m: tqdm.write(m, end=""),
         colorize=True,
         backtrace=True,
         diagnose=True,
         level=level,
+        filter=make_filter(name)
     )
+    time_info = datetime.datetime.now().replace(microsecond=0).isoformat().replace(":", "-")
     logger.add(
-        "logs/{sub_dir}/{name}.log".format(sub_dir=sub_dir, name=name),
+        "logs/{time_info}+{name}.log".format(time_info=time_info, name=name),
         backtrace=True,
         diagnose=True,
         level=level,
+        filter=make_filter(name)
     )
-    return logger
+    existed_logger_name.append(name)
+    return logger.bind(name=name)

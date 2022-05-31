@@ -2,6 +2,7 @@ import abc
 
 from torchfed.routers.router_msg import RouterMsg, RouterMsgResponse
 from typing import TypeVar, Generic
+from torchfed.logging import get_logger
 
 T = TypeVar('T')
 
@@ -11,6 +12,8 @@ class Module(abc.ABC):
         self.name = name
         self.debug = debug
         self.router = router
+        self.logger = get_logger(name.split("/")[0])
+
         self.routing_table = {}
 
         router.register(self)
@@ -30,6 +33,7 @@ class Module(abc.ABC):
     def register_submodule(self, module: Generic[T], name, router, *args) -> T:
         submodule_name = f"{self.name}/{name}"
         if submodule_name in self.routing_table:
+            self.logger.error("Cannot register modules with the same name")
             raise Exception("Cannot register modules with the same name")
         module_obj = module(submodule_name, router, *args, self.debug)
         self.routing_table[name] = module_obj
@@ -43,10 +47,9 @@ class Module(abc.ABC):
 
     def receive(self, router_msg: RouterMsg) -> RouterMsgResponse:
         if self.debug:
-            print(f"Module {self.name} receiving data {router_msg}")
+            self.logger.debug(f"Module {self.name} receiving data {router_msg}")
         if self.debug:
-            print(
-                f"Module {self.name} is calling path {router_msg.path} with args {router_msg.args}")
+            self.logger.debug(f"Module {self.name} is calling path {router_msg.path} with args {router_msg.args}")
 
         ret = RouterMsgResponse(
             from_=self.name,
@@ -57,9 +60,8 @@ class Module(abc.ABC):
 
         if self.debug:
             if ret.data is None:
-                print(
-                    f"Module {self.name} does not have path {router_msg.path}")
-            print(f"Module {self.name} responses with data {ret}")
+                self.logger.warning(f"Module {self.name} does not have path {router_msg.path}")
+            self.logger.debug(f"Module {self.name} responses with data {ret}")
         return ret
 
     def manual_call(self, path, args, check_exposed=True):

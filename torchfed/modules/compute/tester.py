@@ -20,5 +20,5 @@ class Tester(Module):
                 _, predicted = torch.max(outputs.data, 1)
                 total += targets.size(0)
                 correct += (predicted == targets).sum().item()
-        print(f'[{self.name}] Test Accuracy: {100 * correct // total} %')
+        self.logger.info(f'[{self.name}] Test Accuracy: {100 * correct // total} %')
         yield False

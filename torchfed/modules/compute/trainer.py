@@ -30,5 +30,5 @@ class Trainer(Module):
             self.optimizer.step()
             running_loss += loss.item()
             counter += 1
-        print(f'[{self.name}] Training Loss: {running_loss / counter:.3f}')
+        self.logger.info(f'[{self.name}] Training Loss: {running_loss / counter:.3f}')
         yield False

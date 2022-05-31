@@ -4,6 +4,7 @@ import torch
 import torch.distributed.rpc as rpc
 
 from .router_msg import RouterMsg
+from torchfed.logging import get_logger
 
 
 class Router(abc.ABC):
@@ -30,6 +31,7 @@ class Router(abc.ABC):
         self.rank = rank
         self.world_size = world_size
         self.debug = debug
+        self.logger = get_logger(self.name)
 
         self.owned_workers = {}
         self.peers_table = {}
@@ -38,7 +40,7 @@ class Router(abc.ABC):
             self.name, backend, rank, world_size, rpc_backend_options)
 
         if self.debug:
-            print("Initialized completed")
+            self.logger.debug(f"[{self.name}] Initialized completed")
 
     def register(self, module):
         if "/" in module.name:
@@ -46,10 +48,13 @@ class Router(abc.ABC):
         if module.name not in self.owned_workers.keys():
             self.owned_workers[module.name] = module.receive
 
-    def connect(self, module, peers):
+    def connect(self, module, peers: list):
         if "/" in module.name:
             return
-        self.peers_table[module.name] = peers
+        if hasattr(self.peers_table, module.name):
+            self.peers_table[module.name] += peers
+        else:
+            self.peers_table[module.name] = peers
 
     def get_peers(self, module):
         name = module.name
@@ -63,7 +68,7 @@ class Router(abc.ABC):
 
     def broadcast(self, router_msg: RouterMsg):
         if self.debug:
-            print(f"Router {self.rank} broadcasting message {router_msg}")
+            self.logger.debug(f"[{self.name}] broadcasting message {router_msg}")
         futs, rets = [], []
         for rank in range(self.world_size):
             futs.append(
@@ -81,7 +86,7 @@ class Router(abc.ABC):
     def receive(router_msg: RouterMsg):
         if Router.context.debug:
             print(
-                f"Router {Router.context.rank} receiving message {router_msg}")
+                f"[{Router.context.name}] receiving message {router_msg}")
         if router_msg.to in Router.context.owned_workers.keys():
             return Router.context.owned_workers[router_msg.to](router_msg)
         return None
