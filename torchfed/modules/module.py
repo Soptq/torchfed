@@ -58,9 +58,9 @@ class Module(abc.ABC):
                 router_msg.path,
                 router_msg.args))
 
+        if ret.data is None:
+            self.logger.warning(f"Module {self.name} does not have path {router_msg.path}")
         if self.debug:
-            if ret.data is None:
-                self.logger.warning(f"Module {self.name} does not have path {router_msg.path}")
             self.logger.debug(f"Module {self.name} responses with data {ret}")
         return ret
 
