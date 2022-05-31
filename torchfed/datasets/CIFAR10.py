@@ -29,22 +29,16 @@ class CIFAR10(Dataset):
             transform: Optional[Callable] = None,
             target_transform: Optional[Callable] = None,
             download: bool = False,
-            seed: int = 0,
     ) -> None:
-        random.seed(seed)
-        np.random.seed(seed)
+        self.root = root
+        self.num_users = num_users
+        self.num_labels_for_users = num_labels_for_users
+        self.transform = transform
+        self.target_transform = target_transform
+        self.download = download
+
         self.identifier = hex_hash(
-            f"{root}-{num_users}-{num_labels_for_users}-{seed}")
-
-        if transform is None:
-            transform = transforms.Compose([
-                transforms.ToTensor()
-            ])
-
-        self.train_dataset = torchvision.datasets.CIFAR10(
-            root, True, transform, target_transform, download)
-        self.test_dataset = torchvision.datasets.CIFAR10(
-            root, False, transform, target_transform, download)
+            f"{root}-{num_users}-{num_labels_for_users}")
 
         dataset_path = os.path.join(root, self.split_base_folder)
         data_file_name = f"{self.split_dataset_name}.{self.identifier}.pkl"
@@ -59,6 +53,16 @@ class CIFAR10(Dataset):
                 pass
         else:
             os.makedirs(dataset_path)
+
+        if transform is None:
+            self.transform = transforms.Compose([
+                transforms.ToTensor()
+            ])
+
+        self.train_dataset = torchvision.datasets.CIFAR10(
+            root, True, transform, target_transform, download)
+        self.test_dataset = torchvision.datasets.CIFAR10(
+            root, False, transform, target_transform, download)
 
         train_dataloader = torch.utils.data.DataLoader(
             self.train_dataset, batch_size=len(
@@ -147,4 +151,11 @@ class CIFAR10(Dataset):
         return self.split_dataset[user_idx]
 
     def get_bundle_dataset(self):
-        return self.train_dataset, self.test_dataset
+        if hasattr(self, "train_dataset") and hasattr(self, "test_dataset"):
+            return self.train_dataset, self.test_dataset
+        else:
+            train_dataset = torchvision.datasets.CIFAR10(
+                self.root, True, self.transform, self.target_transform, self.download)
+            test_dataset = torchvision.datasets.CIFAR10(
+                self.root, False, self.transform, self.target_transform, self.download)
+            return train_dataset, test_dataset
