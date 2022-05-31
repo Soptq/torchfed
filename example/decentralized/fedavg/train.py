@@ -18,8 +18,22 @@ import config
 
 
 class FedAvgNode(Module):
-    def __init__(self, name, router, rank, peers, bootstrap_from, tensorboard=False, debug=False):
-        super(FedAvgNode, self).__init__(name, router, tensorboard=tensorboard, debug=debug)
+    def __init__(
+            self,
+            name,
+            router,
+            rank,
+            peers,
+            bootstrap_from,
+            tensorboard=False,
+            debug=False):
+        super(
+            FedAvgNode,
+            self).__init__(
+            name,
+            router,
+            tensorboard=tensorboard,
+            debug=debug)
         self.model = CIFARNet()
 
         transform = transforms.Compose([

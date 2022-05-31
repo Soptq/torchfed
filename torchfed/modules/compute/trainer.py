@@ -12,7 +12,13 @@ class Trainer(Module):
             loss_fn,
             tensorboard=False,
             debug=False):
-        super(Trainer, self).__init__(name, router, tensorboard=tensorboard, debug=debug)
+        super(
+            Trainer,
+            self).__init__(
+            name,
+            router,
+            tensorboard=tensorboard,
+            debug=debug)
         self.model = model
         self.dataloader = dataloader
         self.optimizer = optimizer
@@ -39,8 +45,12 @@ class Trainer(Module):
             self.optimizer.step()
             running_loss += loss.item()
             counter += 1
-        self.logger.info(f'[{self.name}] Training Loss: {running_loss / counter:.3f}')
+        self.logger.info(
+            f'[{self.name}] Training Loss: {running_loss / counter:.3f}')
         if self.tensorboard:
-            self.writer.add_scalar("Loss/Train", running_loss / counter, self.num_trains)
+            self.writer.add_scalar(
+                "Loss/Train",
+                running_loss / counter,
+                self.num_trains)
         self.num_trains += 1
         yield False

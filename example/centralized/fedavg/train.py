@@ -19,7 +19,13 @@ import config
 
 class FedAvgServer(Module):
     def __init__(self, name, router, tensorboard=False, debug=False):
-        super(FedAvgServer, self).__init__(name, router, tensorboard=tensorboard, debug=debug)
+        super(
+            FedAvgServer,
+            self).__init__(
+            name,
+            router,
+            tensorboard=tensorboard,
+            debug=debug)
         self.model = CIFARNet()
 
         transform = transforms.Compose([
@@ -62,7 +68,13 @@ class FedAvgServer(Module):
 
 class FedAvgClient(Module):
     def __init__(self, name, router, rank, tensorboard=False, debug=False):
-        super(FedAvgClient, self).__init__(name, router, tensorboard=tensorboard, debug=debug)
+        super(
+            FedAvgClient,
+            self).__init__(
+            name,
+            router,
+            tensorboard=tensorboard,
+            debug=debug)
         self.model = CIFARNet()
 
         transform = transforms.Compose([
@@ -128,7 +140,12 @@ if __name__ == '__main__':
     server = FedAvgServer("server", router, tensorboard=True)
     clients = []
     for rank in range(config.num_users):
-        clients.append(FedAvgClient(f"client_{rank}", router, rank, tensorboard=True))
+        clients.append(
+            FedAvgClient(
+                f"client_{rank}",
+                router,
+                rank,
+                tensorboard=True))
 
     # train
     for epoch in range(config.num_epochs):

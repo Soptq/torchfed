@@ -19,7 +19,8 @@ class Module(abc.ABC):
         self.tensorboard = tensorboard
         if self.tensorboard:
             if self.is_root():
-                self.logger.info(f"[{self.name}] Tensorboard enabled. Run `tensorboard --logdir=runs/{router.ident}` to start.")
+                self.logger.info(
+                    f"[{self.name}] Tensorboard enabled. Run `tensorboard --logdir=runs/{router.ident}` to start.")
             self.writer = self.get_tensorboard_writer()
 
         self.routing_table = {}
@@ -43,7 +44,12 @@ class Module(abc.ABC):
         if submodule_name in self.routing_table:
             self.logger.error("Cannot register modules with the same name")
             raise Exception("Cannot register modules with the same name")
-        module_obj = module(submodule_name, router, *args, tensorboard=self.tensorboard, debug=self.debug)
+        module_obj = module(
+            submodule_name,
+            router,
+            *args,
+            tensorboard=self.tensorboard,
+            debug=self.debug)
         self.routing_table[name] = module_obj
         return module_obj
 
@@ -55,9 +61,11 @@ class Module(abc.ABC):
 
     def receive(self, router_msg: RouterMsg) -> RouterMsgResponse:
         if self.debug:
-            self.logger.debug(f"Module {self.name} receiving data {router_msg}")
+            self.logger.debug(
+                f"Module {self.name} receiving data {router_msg}")
         if self.debug:
-            self.logger.debug(f"Module {self.name} is calling path {router_msg.path} with args {router_msg.args}")
+            self.logger.debug(
+                f"Module {self.name} is calling path {router_msg.path} with args {router_msg.args}")
 
         ret = RouterMsgResponse(
             from_=self.name,
@@ -67,7 +75,8 @@ class Module(abc.ABC):
                 router_msg.args))
 
         if ret.data is None:
-            self.logger.warning(f"Module {self.name} does not have path {router_msg.path}")
+            self.logger.warning(
+                f"Module {self.name} does not have path {router_msg.path}")
         if self.debug:
             self.logger.debug(f"Module {self.name} responses with data {ret}")
         return ret
@@ -93,7 +102,8 @@ class Module(abc.ABC):
         return None
 
     def get_tensorboard_writer(self):
-        return SummaryWriter(log_dir=f"runs/{self.router.ident}/{self.get_root_name()}")
+        return SummaryWriter(
+            log_dir=f"runs/{self.router.ident}/{self.get_root_name()}")
 
     def is_root(self):
         return "/" not in self.name

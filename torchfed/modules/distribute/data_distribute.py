@@ -6,7 +6,13 @@ from torchfed.utils.decorator import exposed
 
 class DataDistributing(Module):
     def __init__(self, name, router, tensorboard=False, debug=False):
-        super(DataDistributing, self).__init__(name, router, tensorboard=tensorboard, debug=debug)
+        super(
+            DataDistributing,
+            self).__init__(
+            name,
+            router,
+            tensorboard=tensorboard,
+            debug=debug)
         self.storage = {}
         self.shared = None
 

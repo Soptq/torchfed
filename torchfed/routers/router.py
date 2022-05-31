@@ -66,7 +66,8 @@ class Router(abc.ABC):
 
     def broadcast(self, router_msg: RouterMsg):
         if self.debug:
-            self.logger.debug(f"[{self.name}] broadcasting message {router_msg}")
+            self.logger.debug(
+                f"[{self.name}] broadcasting message {router_msg}")
         futs, rets = [], []
         for rank in range(self.world_size):
             futs.append(
