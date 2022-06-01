@@ -1,12 +1,15 @@
 import abc
 import time
 
+from torch.utils.tensorboard import SummaryWriter
+
 import torch
 import torch.distributed.rpc as rpc
 
 from .router_msg import RouterMsg
 from torchfed.logging import get_logger
 from torchfed.utils.hash import hex_hash
+from torchfed.utils.plotter import NetworkConnectionsPlotter
 
 
 class Router(abc.ABC):
@@ -18,6 +21,7 @@ class Router(abc.ABC):
             world_size,
             backend=None,
             rpc_backend_options=None,
+            tensorboard=False,
             debug=False):
         if backend is None:
             backend = rpc.BackendType.TENSORPIPE
@@ -31,9 +35,15 @@ class Router(abc.ABC):
         self.name = f"router_{rank}"
         self.rank = rank
         self.world_size = world_size
+        self.tensorboard = tensorboard
         self.debug = debug
         self.ident = hex_hash(f"{time.time_ns()}")
         self.logger = get_logger(self.ident, self.name)
+
+        if self.tensorboard:
+            self.logger.info(
+                f"[{self.name}] Tensorboard enabled. Run `tensorboard --logdir=runs/{self.ident}` to start.")
+            self.writer = self.get_tensorboard_writer()
 
         self.owned_workers = {}
         self.peers_table = {}
@@ -51,6 +61,7 @@ class Router(abc.ABC):
     def connect(self, module, peers: list):
         if not module.is_root():
             return
+        peers = [peer.split("/")[0] for peer in peers]
         if hasattr(self.peers_table, module.name):
             self.peers_table[module.name] += peers
         else:
@@ -89,6 +100,10 @@ class Router(abc.ABC):
         if router_msg.to in Router.context.owned_workers.keys():
             return Router.context.owned_workers[router_msg.to](router_msg)
         return None
+
+    def get_tensorboard_writer(self):
+        return SummaryWriter(
+            log_dir=f"runs/{self.ident}/{self.name}")
 
     def __del__(self):
         rpc.shutdown()

@@ -38,7 +38,7 @@ class Tester(Module):
             f'[{self.name}] Test Accuracy: {100 * correct / total:.3f} %')
         if self.tensorboard:
             self.writer.add_scalar(
-                "Accuracy/Test",
+                f"Accuracy/Test/{self.name}",
                 100 * correct / total,
                 self.num_tests)
         self.num_tests += 1

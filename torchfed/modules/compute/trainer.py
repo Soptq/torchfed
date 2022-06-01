@@ -49,7 +49,7 @@ class Trainer(Module):
             f'[{self.name}] Training Loss: {running_loss / counter:.3f}')
         if self.tensorboard:
             self.writer.add_scalar(
-                "Loss/Train",
+                f"Loss/Train/{self.name}",
                 running_loss / counter,
                 self.num_trains)
         self.num_trains += 1

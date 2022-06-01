@@ -135,7 +135,7 @@ if __name__ == '__main__':
     # init
     os.environ["MASTER_ADDR"] = "localhost"
     os.environ["MASTER_PORT"] = "5678"
-    router = Router(0, 1)
+    router = Router(0, 1, tensorboard=True)
 
     server = FedAvgServer("server", router, tensorboard=True)
     clients = []
