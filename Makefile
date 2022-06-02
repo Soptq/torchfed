@@ -1,4 +1,6 @@
 install:
+	git submodule update --init
+	pip install -e deps/visdom
 	pip install -r requirements.txt
 
 lint-fix:
