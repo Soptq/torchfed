@@ -11,7 +11,7 @@ from torchvision.transforms import transforms
 from tqdm import trange, tqdm
 
 from torchfed.datasets import Dataset
-from torchfed.utils.datasets import BundleSplitDataset, UserDataset
+from torchfed.types.datasets import BundleSplitDataset, UserDataset
 from torchfed.utils.hash import hex_hash
 
 
@@ -44,7 +44,6 @@ class CIFAR10(Dataset):
         data_file_name = f"{self.split_dataset_name}.{self.identifier}.pkl"
 
         if os.path.exists(dataset_path):
-            pass
             try:
                 with open(os.path.join(dataset_path, data_file_name), 'rb') as f:
                     self.split_dataset = torch.load(f)

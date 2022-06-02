@@ -44,8 +44,8 @@ class FedAvgServer(Module):
 
         self.distributor = self.register_submodule(
             WeightedDataDistributing, "distributor", router)
-        self.tester = self.register_submodule(
-            Tester, "tester", router, self.model, self.test_loader)
+        self.global_tester = self.register_submodule(
+            Tester, "global_tester", router, self.model, self.test_loader)
 
         router.connect(
             self, [
@@ -54,8 +54,14 @@ class FedAvgServer(Module):
 
         self.distributor.update(self.model.state_dict())
 
+    def log_hp(self):
+        return {
+            "dataset": self.dataset.name,
+            "model": self.model.name,
+        }
+
     def execute(self):
-        self.tester()
+        self.global_tester()
 
         aggregated = self.distributor.aggregate()
         if aggregated is None:
@@ -81,14 +87,14 @@ class FedAvgClient(Module):
             transforms.ToTensor(),
             transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
         ])
-        dataset = CIFAR10(
+        self.dataset = CIFAR10(
             "../../data",
             config.num_users,
             config.num_labels,
             download=True,
             transform=transform)
         [self.train_dataset,
-         self.test_dataset] = dataset.get_user_dataset(rank)
+         self.test_dataset] = self.dataset.get_user_dataset(rank)
         self.train_loader = torch.utils.data.DataLoader(
             self.train_dataset, batch_size=config.batch_size, shuffle=True)
         self.test_loader = torch.utils.data.DataLoader(
@@ -110,6 +116,17 @@ class FedAvgClient(Module):
             Tester, "tester", router, self.model, self.test_loader)
 
         router.connect(self, ["server"])
+
+    def log_hp(self):
+        return {
+            "dataset": self.dataset.name,
+            "model": self.model.name,
+            "batch_size": config.batch_size,
+            "dataset_size": self.dataset_size,
+            "optimizer": "adam",
+            "loss_fn": "cross entropy loss",
+            "local_iterations": config.local_iterations,
+        }
 
     def execute(self):
         global_model = self.send(

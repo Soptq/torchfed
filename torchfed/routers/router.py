@@ -1,5 +1,8 @@
+import os
 import abc
 import time
+
+import urllib3.exceptions
 
 import visdom
 
@@ -82,7 +85,6 @@ class Router(abc.ABC):
                     node_labels[to_node] = len(node_labels)
                 edges.append((node_labels[from_node], node_labels[to_node]))
             node_labels = list(dict(sorted(node_labels.items(), key=lambda item: item[1])).keys())
-            print(node_labels)
             self.writer.graph(edges,
                               nodeLabels=node_labels,
                               opts={"showEdgeLabels": True,
@@ -128,11 +130,21 @@ class Router(abc.ABC):
         return None
 
     def get_visualizer(self):
-        v = visdom.Visdom(env=self.ident, log_to_filename=f"runs/{self.ident}/{self.name}.vis")
-        if not v.check_connection():
+        if not os.path.exists("runs"):
+            os.mkdir("runs")
+
+        visualizer_log_path = f"runs/{self.ident}"
+        if not os.path.exists(visualizer_log_path):
+            os.mkdir(visualizer_log_path)
+
+        try:
+            v = visdom.Visdom(env=self.ident, log_to_filename=f"runs/{self.ident}/{self.name}.vis", raise_exceptions=True)
+        except (ConnectionRefusedError, ConnectionError, urllib3.exceptions.NewConnectionError,
+                urllib3.exceptions.MaxRetryError):
             self.logger.warning("Visualizer server has to be started ahead of time")
             self.logger.warning(
                 f"Using offline mode, visualizer logs to runs/{self.ident}/{self.name}.vis")
+            v = visdom.Visdom(env=self.ident, log_to_filename=f"runs/{self.ident}/{self.name}.vis", offline=True)
         return v
 
     def __del__(self):

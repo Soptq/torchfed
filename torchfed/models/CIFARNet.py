@@ -1,11 +1,16 @@
 import torch.nn as nn
 import torch.nn.functional as F
 
+from torchfed.types.named import Named
 
-class CIFARNet(nn.Module):
+
+class CIFARNet(nn.Module, Named):
+    @property
+    def name(self) -> str:
+        return "CIFARNet"
+
     def __init__(self):
         super(CIFARNet, self).__init__()
-        self.name = "CIFARNet"
         self.conv1 = nn.Conv2d(3, 6, 5)
         self.pool = nn.MaxPool2d(2, 2)
         self.conv2 = nn.Conv2d(6, 16, 5)

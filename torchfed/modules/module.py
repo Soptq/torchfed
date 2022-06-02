@@ -1,16 +1,20 @@
 import os
-import abc
+
+import urllib3
 
 import visdom
 
 from torchfed.routers.router_msg import RouterMsg, RouterMsgResponse
 from typing import TypeVar, Generic
 from torchfed.logging import get_logger
+from torchfed.types.meta import PostInitCaller
+
+from prettytable import PrettyTable
 
 T = TypeVar('T')
 
 
-class Module(abc.ABC):
+class Module(metaclass=PostInitCaller):
     def __init__(self, name, router, visualizer=False, debug=False):
         self.name = name
         self.debug = debug
@@ -25,10 +29,21 @@ class Module(abc.ABC):
             self.writer = self.get_visualizer()
 
         self.routing_table = {}
-
         router.register(self)
 
         self.execute_gen = self.execute()
+
+    def __post__init__(self):
+        if self.is_root():
+            hps = self.log_hp()
+            hps["name"] = self.name
+            hps["visualizer"] = self.visualizer
+            hps["debug"] = self.debug
+            hp_table = PrettyTable()
+            hp_table.field_names = hps.keys()
+            hp_table.add_row(hps.values())
+            for row in hp_table.get_string().split("\n"):
+                self.logger.info(row)
 
     def __call__(self, *args, **kwargs):
         _continue = next(self.execute_gen)
@@ -36,7 +51,9 @@ class Module(abc.ABC):
             self.execute_gen = self.execute()
         return _continue
 
-    @abc.abstractmethod
+    def log_hp(self):
+        return {}
+
     def execute(self):
         yield False
 
@@ -103,13 +120,22 @@ class Module(abc.ABC):
         return None
 
     def get_visualizer(self):
+        if not os.path.exists("runs"):
+            os.mkdir("runs")
+
         visualizer_log_path = f"runs/{self.router.ident}"
         if not os.path.exists(visualizer_log_path):
             os.mkdir(visualizer_log_path)
-        v = visdom.Visdom(env=self.router.ident, log_to_filename=f"{visualizer_log_path}/{self.get_root_name()}.vis")
-        if not v.check_connection():
-            self.logger.warning("Visualizer server has to be started ahead of time")
-            self.logger.warning(f"Using offline mode, visualizer logs to runs/{self.router.ident}/{self.get_root_name()}.vis")
+
+        try:
+            v = visdom.Visdom(env=self.router.ident, log_to_filename=f"{visualizer_log_path}/{self.get_root_name()}.vis", raise_exceptions=True)
+        except (ConnectionRefusedError, ConnectionError, urllib3.exceptions.NewConnectionError, urllib3.exceptions.MaxRetryError):
+            if self.is_root():
+                self.logger.warning("Visualizer server has to be started ahead of time")
+                self.logger.warning(
+                    f"Using offline mode, visualizer logs to runs/{self.router.ident}/{self.get_root_name()}.vis")
+            v = visdom.Visdom(env=self.router.ident,
+                              log_to_filename=f"{visualizer_log_path}/{self.get_root_name()}.vis", offline=True)
         return v
 
     def is_root(self):
@@ -117,6 +143,9 @@ class Module(abc.ABC):
 
     def get_root_name(self):
         return self.name.split("/")[0]
+
+    def get_path(self):
+        return "/".join(self.name.split("/")[1:])
 
     def __del__(self):
         if self.visualizer:

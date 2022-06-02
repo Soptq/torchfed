@@ -1,4 +1,5 @@
 from torch.utils.data import Dataset
+from .named import Named
 
 
 class UserDataset(Dataset):
