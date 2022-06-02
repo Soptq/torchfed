@@ -13,7 +13,13 @@ T = TypeVar('T')
 
 
 class Module(metaclass=PostInitCaller):
-    def __init__(self, name, router, visualizer=False, writer=None, debug=False):
+    def __init__(
+            self,
+            name,
+            router,
+            visualizer=False,
+            writer=None,
+            debug=False):
         self.name = name
         self.debug = debug
         self.router = router

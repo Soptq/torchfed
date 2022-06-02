@@ -38,5 +38,7 @@ class Tester(Module):
         self.logger.info(
             f'[{self.name}] Test Accuracy: {100 * correct / total:.3f} %')
         if self.visualizer:
-            self.writer.track(100 * correct / total, name=f"Accuracy/Test/{self.get_path()}")
+            self.writer.track(
+                100 * correct / total,
+                name=f"Accuracy/Test/{self.get_path()}")
         yield False

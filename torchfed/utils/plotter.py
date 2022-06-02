@@ -63,13 +63,13 @@ class NetworkConnectionsPlotter:
         node_trace.text = node_text
 
         return go.Figure(data=[edge_trace, node_trace],
-                        layout=go.Layout(
-                            showlegend=False,
-                            hovermode='closest',
-                            margin=dict(b=20, l=5, r=5, t=40),
-                            xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-                            yaxis=dict(showgrid=False, zeroline=False, showticklabels=False))
-                        )
+                         layout=go.Layout(
+            showlegend=False,
+            hovermode='closest',
+            margin=dict(b=20, l=5, r=5, t=40),
+            xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+            yaxis=dict(showgrid=False, zeroline=False, showticklabels=False))
+        )
 
 
 if __name__ == '__main__':

@@ -48,5 +48,7 @@ class Trainer(Module):
         self.logger.info(
             f'[{self.name}] Training Loss: {running_loss / counter:.3f}')
         if self.visualizer:
-            self.writer.track(running_loss / counter, name=f"Loss/Train/{self.get_path()}")
+            self.writer.track(
+                running_loss / counter,
+                name=f"Loss/Train/{self.get_path()}")
         yield False

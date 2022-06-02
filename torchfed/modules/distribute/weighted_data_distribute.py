@@ -5,7 +5,13 @@ from torchfed.utils.decorator import exposed
 
 
 class WeightedDataDistributing(Module):
-    def __init__(self, name, router, visualizer=False, writer=None, debug=False):
+    def __init__(
+            self,
+            name,
+            router,
+            visualizer=False,
+            writer=None,
+            debug=False):
         super(
             WeightedDataDistributing,
             self).__init__(
