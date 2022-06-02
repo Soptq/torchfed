@@ -106,10 +106,10 @@ class Module(abc.ABC):
         visualizer_log_path = f"runs/{self.router.ident}"
         if not os.path.exists(visualizer_log_path):
             os.mkdir(visualizer_log_path)
-        v = visdom.Visdom(env=self.router.ident, log_to_filename=f"{visualizer_log_path}/{self.get_root_name()}")
+        v = visdom.Visdom(env=self.router.ident, log_to_filename=f"{visualizer_log_path}/{self.get_root_name()}.vis")
         if not v.check_connection():
             self.logger.warning("Visualizer server has to be started ahead of time")
-            self.logger.warning(f"Using offline mode, visualizer logs to runs/{self.router.ident}/{self.get_root_name()}")
+            self.logger.warning(f"Using offline mode, visualizer logs to runs/{self.router.ident}/{self.get_root_name()}.vis")
         return v
 
     def is_root(self):

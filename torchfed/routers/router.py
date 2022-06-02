@@ -102,11 +102,11 @@ class Router(abc.ABC):
         return None
 
     def get_visualizer(self):
-        v = visdom.Visdom(env=self.ident, log_to_filename=f"runs/{self.ident}/{self.name}")
+        v = visdom.Visdom(env=self.ident, log_to_filename=f"runs/{self.ident}/{self.name}.vis")
         if not v.check_connection():
             self.logger.warning("Visualizer server has to be started ahead of time")
             self.logger.warning(
-                f"Using offline mode, visualizer logs to runs/{self.ident}/{self.name}")
+                f"Using offline mode, visualizer logs to runs/{self.ident}/{self.name}.vis")
         return v
 
     def __del__(self):
