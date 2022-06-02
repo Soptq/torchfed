@@ -11,6 +11,7 @@ class Trainer(Module):
             optimizer,
             loss_fn,
             visualizer=False,
+            writer=None,
             debug=False):
         super(
             Trainer,
@@ -18,13 +19,12 @@ class Trainer(Module):
             name,
             router,
             visualizer=visualizer,
+            writer=writer,
             debug=debug)
         self.model = model
         self.dataloader = dataloader
         self.optimizer = optimizer
         self.loss_fn = loss_fn
-
-        self.trainer_visualizer_step = 0
 
         # if self.visualizer:
         #     # graph_writer = self.get_tensorboard_writer()
@@ -48,8 +48,5 @@ class Trainer(Module):
         self.logger.info(
             f'[{self.name}] Training Loss: {running_loss / counter:.3f}')
         if self.visualizer:
-            self.writer.line([running_loss / counter], X=[self.trainer_visualizer_step],
-                             name=self.get_root_name(), update="append",
-                             win=f"Loss/Train/{self.get_path()}", opts=dict(title=f"Loss/Train/{self.get_path()}"))
-            self.trainer_visualizer_step += 1
+            self.writer.track(running_loss / counter, name=f"Loss/Train/{self.get_path()}")
         yield False

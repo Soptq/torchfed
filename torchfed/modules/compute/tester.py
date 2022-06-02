@@ -10,6 +10,7 @@ class Tester(Module):
             model,
             dataloader,
             visualizer=False,
+            writer=None,
             debug=False):
         super(
             Tester,
@@ -17,10 +18,10 @@ class Tester(Module):
             name,
             router,
             visualizer=visualizer,
+            writer=writer,
             debug=debug)
         self.model = model
         self.dataloader = dataloader
-        self.tester_visualizer_step = 0
 
     def execute(self):
         self.model.eval()
@@ -37,8 +38,5 @@ class Tester(Module):
         self.logger.info(
             f'[{self.name}] Test Accuracy: {100 * correct / total:.3f} %')
         if self.visualizer:
-            self.writer.line([100 * correct / total], X=[self.tester_visualizer_step],
-                             name=self.get_root_name(), update="append",
-                             win=f"Accuracy/Test/{self.get_path()}", opts=dict(title=f"Accuracy/Test/{self.get_path()}"))
-            self.tester_visualizer_step += 1
+            self.writer.track(100 * correct / total, name=f"Accuracy/Test/{self.get_path()}")
         yield False

@@ -1,9 +1,9 @@
 # TODO
 
-- [x] Dashboard: Visdom
+- [x] Dashboard: `aim`
 - [ ] Dashboard prettier (using CSS)
 - [x] Logs replayer
-- [ ] Visdom plugin system
+- [ ] `aim` plugin system
 - [x] Connections visualization
 - [ ] Hyper-parameter logging & visualization
 - [ ] Dataset Manager 
@@ -15,4 +15,5 @@
 - [ ] Create benchmarks to validate that our implementations are correct
 - [ ] GPU support
 - [ ] Implement real P2P communication
-- [ ] Make Visdom parse different experiments
+- [ ] Make `aim` parse different experiments
+- [ ] RPC error at the end of the training (on MacOS).

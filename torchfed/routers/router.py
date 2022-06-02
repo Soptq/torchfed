@@ -2,9 +2,7 @@ import os
 import abc
 import time
 
-import urllib3.exceptions
-
-import visdom
+import aim
 
 import torch
 import torch.distributed.rpc as rpc
@@ -12,6 +10,7 @@ import torch.distributed.rpc as rpc
 from .router_msg import RouterMsg
 from torchfed.logging import get_logger
 from torchfed.utils.hash import hex_hash
+from torchfed.utils.plotter import NetworkConnectionsPlotter
 
 
 class Router(abc.ABC):
@@ -44,13 +43,13 @@ class Router(abc.ABC):
 
         if self.visualizer:
             self.logger.info(
-                f"[{self.name}] Visualizer enabled. Run `visdom -env_path=./runs` to start.")
+                f"[{self.name}] Visualizer enabled. Run `aim up` to start.")
             self.writer = self.get_visualizer()
 
         self.owned_nodes = {}
         self.peers_table = {}
 
-        self.network_edges = set()
+        self.network_plotter = NetworkConnectionsPlotter()
         torch.distributed.rpc.init_rpc(
             self.name, backend, rank, world_size, rpc_backend_options)
 
@@ -72,28 +71,11 @@ class Router(abc.ABC):
             self.peers_table[module.name] = peers
 
         for peer in peers:
-            self.network_edges.add((module.name, peer))
+            self.network_plotter.add_edge(module.name, peer)
 
         if self.visualizer:
-            node_labels = {}
-            edges = []
-            for edge in self.network_edges:
-                (from_node, to_node) = edge
-                if from_node not in node_labels:
-                    node_labels[from_node] = len(node_labels)
-                if to_node not in node_labels:
-                    node_labels[to_node] = len(node_labels)
-                edges.append((node_labels[from_node], node_labels[to_node]))
-            node_labels = list(dict(sorted(node_labels.items(), key=lambda item: item[1])).keys())
-            self.writer.graph(edges,
-                              nodeLabels=node_labels,
-                              opts={"showEdgeLabels": True,
-                                    "showVertexLabels": True,
-                                    "scheme": "different",
-                                    "directed": True,
-                                    "height": 335,
-                                    "width": 371},
-                              win="Connection Graph")
+            fig = self.network_plotter.get_figure()
+            self.writer.track(aim.Figure(fig), name="Network Graph")
 
     def get_peers(self, module):
         name = module.get_root_name()
@@ -133,19 +115,10 @@ class Router(abc.ABC):
         if not os.path.exists("runs"):
             os.mkdir("runs")
 
-        visualizer_log_path = f"runs/{self.ident}"
-        if not os.path.exists(visualizer_log_path):
-            os.mkdir(visualizer_log_path)
-
-        try:
-            v = visdom.Visdom(env=self.ident, log_to_filename=f"runs/{self.ident}/{self.name}.vis", raise_exceptions=True)
-        except (ConnectionRefusedError, ConnectionError, urllib3.exceptions.NewConnectionError,
-                urllib3.exceptions.MaxRetryError):
-            self.logger.warning("Visualizer server has to be started ahead of time")
-            self.logger.warning(
-                f"Using offline mode, visualizer logs to runs/{self.ident}/{self.name}.vis")
-            v = visdom.Visdom(env=self.ident, log_to_filename=f"runs/{self.ident}/{self.name}.vis", offline=True)
-        return v
+        return aim.Run(
+            run_hash=self.name,
+            experiment=self.ident
+        )
 
     def __del__(self):
         rpc.shutdown()

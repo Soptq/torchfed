@@ -119,6 +119,7 @@ class FedAvgClient(Module):
 
     def log_hp(self):
         return {
+            "lr": config.lr,
             "dataset": self.dataset.name,
             "model": self.model.name,
             "batch_size": config.batch_size,

@@ -5,13 +5,14 @@ from torchfed.utils.decorator import exposed
 
 
 class DataDistributing(Module):
-    def __init__(self, name, router, visualizer=False, debug=False):
+    def __init__(self, name, router, visualizer=False, writer=None, debug=False):
         super(
             DataDistributing,
             self).__init__(
             name,
             router,
             visualizer=visualizer,
+            writer=writer,
             debug=debug)
         self.storage = {}
         self.shared = None
