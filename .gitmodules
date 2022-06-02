@@ -1,3 +1,0 @@
-[submodule "deps/visdom"]
-	path = deps/visdom
-	url = https://github.com/fossasia/visdom
