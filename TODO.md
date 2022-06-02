@@ -1,6 +1,6 @@
 # TODO
 
-- [x] Dashboard
+- [ ] Dashboard
 - [ ] Tensorboard plugin system
 - [ ] Connections visualization
     - [ ] [Tensorboard plugin](https://github.com/tensorflow/tensorboard/blob/javascript/ADDING_A_PLUGIN.md) for interactive visualization

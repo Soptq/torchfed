@@ -9,18 +9,18 @@ class Tester(Module):
             router,
             model,
             dataloader,
-            tensorboard=False,
+            visualizer=False,
             debug=False):
         super(
             Tester,
             self).__init__(
             name,
             router,
-            tensorboard=tensorboard,
+            visualizer=visualizer,
             debug=debug)
         self.model = model
         self.dataloader = dataloader
-        self.num_tests = 0
+        self.tester_visualizer_step = 0
 
     def execute(self):
         self.model.eval()
@@ -36,10 +36,7 @@ class Tester(Module):
                 correct += (predicted == targets).sum().item()
         self.logger.info(
             f'[{self.name}] Test Accuracy: {100 * correct / total:.3f} %')
-        if self.tensorboard:
-            self.writer.add_scalar(
-                f"Accuracy/Test/{self.name}",
-                100 * correct / total,
-                self.num_tests)
-        self.num_tests += 1
+        if self.visualizer:
+            self.writer.line([100 * correct / total], X=[self.tester_visualizer_step], name=self.name, update="append", win="Accuracy/Test")
+            self.tester_visualizer_step += 1
         yield False

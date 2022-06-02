@@ -5,13 +5,13 @@ from torchfed.utils.decorator import exposed
 
 
 class WeightedDataDistributing(Module):
-    def __init__(self, name, router, tensorboard=False, debug=False):
+    def __init__(self, name, router, visualizer=False, debug=False):
         super(
             WeightedDataDistributing,
             self).__init__(
             name,
             router,
-            tensorboard=tensorboard,
+            visualizer=visualizer,
             debug=debug)
         self.total_weight = 0
         self.storage = {}

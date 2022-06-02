@@ -10,27 +10,27 @@ class Trainer(Module):
             dataloader,
             optimizer,
             loss_fn,
-            tensorboard=False,
+            visualizer=False,
             debug=False):
         super(
             Trainer,
             self).__init__(
             name,
             router,
-            tensorboard=tensorboard,
+            visualizer=visualizer,
             debug=debug)
         self.model = model
         self.dataloader = dataloader
         self.optimizer = optimizer
         self.loss_fn = loss_fn
 
-        self.num_trains = 0
+        self.trainer_visualizer_step = 0
 
-        if self.tensorboard:
-            # graph_writer = self.get_tensorboard_writer()
-            inputs, _ = next(iter(self.dataloader))
-            self.writer.add_graph(self.model, inputs)
-            # graph_writer.close()
+        # if self.visualizer:
+        #     # graph_writer = self.get_tensorboard_writer()
+        #     inputs, _ = next(iter(self.dataloader))
+        #     self.writer.add_graph(self.model, inputs)
+        #     # graph_writer.close()
 
     def execute(self):
         self.model.train()
@@ -47,10 +47,7 @@ class Trainer(Module):
             counter += 1
         self.logger.info(
             f'[{self.name}] Training Loss: {running_loss / counter:.3f}')
-        if self.tensorboard:
-            self.writer.add_scalar(
-                f"Loss/Train/{self.name}",
-                running_loss / counter,
-                self.num_trains)
-        self.num_trains += 1
+        if self.visualizer:
+            self.writer.line([running_loss / counter], X=[self.trainer_visualizer_step], name=self.name, update="append", win="Loss/Train")
+            self.trainer_visualizer_step += 1
         yield False

@@ -1,7 +1,7 @@
 import abc
 import time
 
-from torch.utils.tensorboard import SummaryWriter
+import visdom
 
 import torch
 import torch.distributed.rpc as rpc
@@ -21,7 +21,7 @@ class Router(abc.ABC):
             world_size,
             backend=None,
             rpc_backend_options=None,
-            tensorboard=False,
+            visualizer=False,
             debug=False):
         if backend is None:
             backend = rpc.BackendType.TENSORPIPE
@@ -35,15 +35,15 @@ class Router(abc.ABC):
         self.name = f"router_{rank}"
         self.rank = rank
         self.world_size = world_size
-        self.tensorboard = tensorboard
+        self.visualizer = visualizer
         self.debug = debug
         self.ident = hex_hash(f"{time.time_ns()}")
         self.logger = get_logger(self.ident, self.name)
 
-        if self.tensorboard:
+        if self.visualizer:
             self.logger.info(
-                f"[{self.name}] Tensorboard enabled. Run `tensorboard --logdir=runs/{self.ident}` to start.")
-            self.writer = self.get_tensorboard_writer()
+                f"[{self.name}] Visualizer enabled. Run `visdom -env_path=./runs` to start.")
+            self.writer = self.get_visualizer()
 
         self.owned_workers = {}
         self.peers_table = {}
@@ -101,9 +101,13 @@ class Router(abc.ABC):
             return Router.context.owned_workers[router_msg.to](router_msg)
         return None
 
-    def get_tensorboard_writer(self):
-        return SummaryWriter(
-            log_dir=f"runs/{self.ident}/{self.name}")
+    def get_visualizer(self):
+        v = visdom.Visdom(env=self.ident, log_to_filename=f"runs/{self.ident}/{self.name}")
+        if not v.check_connection():
+            self.logger.warning("Visualizer server has to be started ahead of time")
+            self.logger.warning(
+                f"Using offline mode, visualizer logs to runs/{self.ident}/{self.name}")
+        return v
 
     def __del__(self):
         rpc.shutdown()

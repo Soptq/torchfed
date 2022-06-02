@@ -25,14 +25,14 @@ class FedAvgNode(Module):
             rank,
             peers,
             bootstrap_from,
-            tensorboard=False,
+            visualizer=False,
             debug=False):
         super(
             FedAvgNode,
             self).__init__(
             name,
             router,
-            tensorboard=tensorboard,
+            visualizer=visualizer,
             debug=debug)
         self.model = CIFARNet()
 
@@ -114,7 +114,7 @@ if __name__ == '__main__':
     # init
     os.environ["MASTER_ADDR"] = "localhost"
     os.environ["MASTER_PORT"] = "5678"
-    router = Router(0, 1, tensorboard=True)
+    router = Router(0, 1, visualizer=True)
 
     nodes = []
     for rank in range(config.num_users):
@@ -126,7 +126,7 @@ if __name__ == '__main__':
         nodes.append(FedAvgNode(f"node_{rank}", router, rank,
                                 connected_peers,
                                 f"node_{rank - 1}" if rank > 0 else None,
-                                tensorboard=True))
+                                visualizer=True))
 
     # train
     for epoch in range(config.num_epochs):
