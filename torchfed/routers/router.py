@@ -9,7 +9,6 @@ import torch.distributed.rpc as rpc
 from .router_msg import RouterMsg
 from torchfed.logging import get_logger
 from torchfed.utils.hash import hex_hash
-from torchfed.utils.plotter import NetworkConnectionsPlotter
 
 
 class Router(abc.ABC):
@@ -45,8 +44,10 @@ class Router(abc.ABC):
                 f"[{self.name}] Visualizer enabled. Run `visdom -env_path=./runs` to start.")
             self.writer = self.get_visualizer()
 
-        self.owned_workers = {}
+        self.owned_nodes = {}
         self.peers_table = {}
+
+        self.network_edges = set()
         torch.distributed.rpc.init_rpc(
             self.name, backend, rank, world_size, rpc_backend_options)
 
@@ -55,8 +56,8 @@ class Router(abc.ABC):
     def register(self, module):
         if not module.is_root():
             return
-        if module.name not in self.owned_workers.keys():
-            self.owned_workers[module.name] = module.receive
+        if module.name not in self.owned_nodes.keys():
+            self.owned_nodes[module.name] = module.receive
 
     def connect(self, module, peers: list):
         if not module.is_root():
@@ -67,13 +68,38 @@ class Router(abc.ABC):
         else:
             self.peers_table[module.name] = peers
 
+        for peer in peers:
+            self.network_edges.add((module.name, peer))
+
+        if self.visualizer:
+            node_labels = {}
+            edges = []
+            for edge in self.network_edges:
+                (from_node, to_node) = edge
+                if from_node not in node_labels:
+                    node_labels[from_node] = len(node_labels)
+                if to_node not in node_labels:
+                    node_labels[to_node] = len(node_labels)
+                edges.append((node_labels[from_node], node_labels[to_node]))
+            node_labels = list(dict(sorted(node_labels.items(), key=lambda item: item[1])).keys())
+            print(node_labels)
+            self.writer.graph(edges,
+                              nodeLabels=node_labels,
+                              opts={"showEdgeLabels": True,
+                                    "showVertexLabels": True,
+                                    "scheme": "different",
+                                    "directed": True,
+                                    "height": 335,
+                                    "width": 371},
+                              win="Connection Graph")
+
     def get_peers(self, module):
         name = module.get_root_name()
         return self.peers_table[name]
 
     def unregister(self, worker):
-        if worker.name in self.owned_workers.keys():
-            del self.owned_workers[worker.name]
+        if worker.name in self.owned_nodes.keys():
+            del self.owned_nodes[worker.name]
 
     def broadcast(self, router_msg: RouterMsg):
         if self.debug:
@@ -97,8 +123,8 @@ class Router(abc.ABC):
         if Router.context.debug:
             print(
                 f"[{Router.context.name}] receiving message {router_msg}")
-        if router_msg.to in Router.context.owned_workers.keys():
-            return Router.context.owned_workers[router_msg.to](router_msg)
+        if router_msg.to in Router.context.owned_nodes.keys():
+            return Router.context.owned_nodes[router_msg.to](router_msg)
         return None
 
     def get_visualizer(self):

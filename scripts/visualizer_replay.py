@@ -31,4 +31,4 @@ if __name__ == '__main__':
             print(f"Replaying {os.path.join(FLAGS.dir, filename)}")
             viz.replay_log(os.path.join(FLAGS.dir, filename))
 
-    print("Logs Replayed")
+    print("All Logs Replayed")

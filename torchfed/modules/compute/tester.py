@@ -37,6 +37,6 @@ class Tester(Module):
         self.logger.info(
             f'[{self.name}] Test Accuracy: {100 * correct / total:.3f} %')
         if self.visualizer:
-            self.writer.line([100 * correct / total], X=[self.tester_visualizer_step], name=self.name, update="append", win="Accuracy/Test")
+            self.writer.line([100 * correct / total], X=[self.tester_visualizer_step], name=self.name, update="append", win=f"Accuracy/Test/{self.name}")
             self.tester_visualizer_step += 1
         yield False

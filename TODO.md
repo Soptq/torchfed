@@ -1,8 +1,11 @@
 # TODO
 
 - [x] Dashboard: Visdom
+- [ ] Dashboard prettier (using CSS)
+- [x] Logs replayer
 - [ ] Visdom plugin system
-- [ ] Connections visualization
+- [x] Connections visualization
+- [ ] Hyper-parameter logging & visualization
 - [ ] Dataset Manager 
   - [ ] Dataset distribution visualization
 - [ ] Hyper-parameter tuning

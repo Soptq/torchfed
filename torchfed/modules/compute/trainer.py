@@ -48,6 +48,6 @@ class Trainer(Module):
         self.logger.info(
             f'[{self.name}] Training Loss: {running_loss / counter:.3f}')
         if self.visualizer:
-            self.writer.line([running_loss / counter], X=[self.trainer_visualizer_step], name=self.name, update="append", win="Loss/Train")
+            self.writer.line([running_loss / counter], X=[self.trainer_visualizer_step], name=self.name, update="append", win=f"Loss/Train/{self.name}")
             self.trainer_visualizer_step += 1
         yield False
