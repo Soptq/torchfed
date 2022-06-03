@@ -1,3 +1,4 @@
+import networkx
 import plotly.graph_objects as go
 
 import networkx as nx
@@ -16,6 +17,12 @@ class NetworkConnectionsPlotter:
         self.add_node(from_node)
         self.add_node(to_node)
         self.graph.add_edge(from_node, to_node)
+
+    def remove_edge(self, from_node, to_node):
+        try:
+            self.graph.remove_edge(from_node, to_node)
+        except networkx.NetworkXError:
+            pass
 
     def get_figure(self):
         pos = nx.circular_layout(self.graph)

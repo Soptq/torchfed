@@ -63,17 +63,35 @@ class Router:
         if module.name not in self.owned_nodes.keys():
             self.owned_nodes[module.name] = module.receive
 
+    def unregister(self, worker):
+        if worker.name in self.owned_nodes.keys():
+            del self.owned_nodes[worker.name]
+
     def connect(self, module, peers: list):
         if not module.is_root():
             return
         peers = [self.get_root_name(peer) for peer in peers]
         if hasattr(self.peers_table, module.name):
-            self.peers_table[module.name] += peers
+            for peer in peers:
+                if peer not in self.peers_table[module.name]:
+                    self.peers_table[module.name].append(peer)
+                    self.network_plotter.add_edge(module.name, peer)
         else:
             self.peers_table[module.name] = peers
 
-        for peer in peers:
-            self.network_plotter.add_edge(module.name, peer)
+        if self.visualizer:
+            fig = self.network_plotter.get_figure()
+            self.writer.track(aim.Figure(fig), name="Network Graph")
+
+    def disconnect(self, module, peers: list):
+        if not module.is_root():
+            return
+        peers = [self.get_root_name(peer) for peer in peers]
+        if hasattr(self.peers_table, module.name):
+            for peer in peers:
+                if peer in self.peers_table[module.name]:
+                    self.peers_table[module.name].remove(peer)
+                    self.network_plotter.remove_edge(module.name, peer)
 
         if self.visualizer:
             fig = self.network_plotter.get_figure()
@@ -82,10 +100,6 @@ class Router:
     def get_peers(self, module):
         name = module.get_root_name()
         return self.peers_table[name]
-
-    def unregister(self, worker):
-        if worker.name in self.owned_nodes.keys():
-            del self.owned_nodes[worker.name]
 
     def broadcast(self, router_msg: RouterMsg) -> List[RouterMsgResponse]:
         if self.debug:

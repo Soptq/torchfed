@@ -29,6 +29,7 @@ class CIFAR10(Dataset):
             transform: Optional[Callable] = None,
             target_transform: Optional[Callable] = None,
             download: bool = False,
+            rebuild: bool = False
     ) -> None:
         self.root = root
         self.num_users = num_users
@@ -43,15 +44,16 @@ class CIFAR10(Dataset):
         dataset_path = os.path.join(root, self.split_base_folder)
         data_file_name = f"{self.split_dataset_name}.{self.identifier}.pkl"
 
-        if os.path.exists(dataset_path):
-            try:
-                with open(os.path.join(dataset_path, data_file_name), 'rb') as f:
-                    self.split_dataset = torch.load(f)
-                return
-            except Exception:
-                pass
-        else:
-            os.makedirs(dataset_path)
+        if not rebuild:
+            if os.path.exists(dataset_path):
+                try:
+                    with open(os.path.join(dataset_path, data_file_name), 'rb') as f:
+                        self.split_dataset = torch.load(f)
+                    return
+                except Exception:
+                    pass
+            else:
+                os.makedirs(dataset_path)
 
         if transform is None:
             self.transform = transforms.Compose([
