@@ -156,3 +156,7 @@ if __name__ == '__main__':
                 _continue |= node()
             if not _continue:
                 break
+
+    for node in nodes:
+        node.release()
+    router.release()

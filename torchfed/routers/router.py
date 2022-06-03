@@ -1,19 +1,19 @@
 import os
-import abc
 import time
+from typing import List
 
 import aim
 
 import torch
 import torch.distributed.rpc as rpc
 
-from .router_msg import RouterMsg
+from .router_msg import RouterMsg, RouterMsgResponse
 from torchfed.logging import get_logger
 from torchfed.utils.hash import hex_hash
-from torchfed.utils.plotter import NetworkConnectionsPlotter
+from torchfed.utils.helper import NetworkConnectionsPlotter, DataTransmitted
 
 
-class Router(abc.ABC):
+class Router:
     context = None
 
     def __init__(
@@ -50,6 +50,8 @@ class Router(abc.ABC):
         self.peers_table = {}
 
         self.network_plotter = NetworkConnectionsPlotter()
+        self.data_transmitted = DataTransmitted()
+
         torch.distributed.rpc.init_rpc(
             self.name, backend, rank, world_size, rpc_backend_options)
 
@@ -64,7 +66,7 @@ class Router(abc.ABC):
     def connect(self, module, peers: list):
         if not module.is_root():
             return
-        peers = [peer.split("/")[0] for peer in peers]
+        peers = [self.get_root_name(peer) for peer in peers]
         if hasattr(self.peers_table, module.name):
             self.peers_table[module.name] += peers
         else:
@@ -85,10 +87,17 @@ class Router(abc.ABC):
         if worker.name in self.owned_nodes.keys():
             del self.owned_nodes[worker.name]
 
-    def broadcast(self, router_msg: RouterMsg):
+    def broadcast(self, router_msg: RouterMsg) -> List[RouterMsgResponse]:
         if self.debug:
             self.logger.debug(
                 f"[{self.name}] broadcasting message {router_msg}")
+
+        self.data_transmitted.add(
+            self.get_root_name(router_msg.from_),
+            self.get_root_name(router_msg.to),
+            router_msg.size
+        )
+
         futs, rets = [], []
         for rank in range(self.world_size):
             futs.append(
@@ -99,7 +108,16 @@ class Router(abc.ABC):
                         router_msg,
                     )))
         for fut in futs:
-            rets.append(fut.wait())
+            resp = fut.wait()
+            if resp is not None:
+                rets.append(resp)
+
+        for ret in rets:
+            self.data_transmitted.add(
+                self.get_root_name(ret.from_),
+                self.get_root_name(ret.to),
+                ret.size
+            )
         return rets
 
     @staticmethod
@@ -107,18 +125,40 @@ class Router(abc.ABC):
         if Router.context.debug:
             print(
                 f"[{Router.context.name}] receiving message {router_msg}")
+
+        Router.context.data_transmitted.add(
+            Router.get_root_name(router_msg.from_),
+            Router.get_root_name(router_msg.to),
+            router_msg.size
+        )
+
         if router_msg.to in Router.context.owned_nodes.keys():
-            return Router.context.owned_nodes[router_msg.to](router_msg)
+            resp_msg = Router.context.owned_nodes[router_msg.to](router_msg)
+            Router.context.data_transmitted.add(
+                Router.get_root_name(resp_msg.from_),
+                Router.get_root_name(resp_msg.to),
+                resp_msg.size
+            )
+            return resp_msg
         return None
 
-    def get_visualizer(self):
-        if not os.path.exists("runs"):
-            os.mkdir("runs")
+    @staticmethod
+    def get_root_name(name):
+        return name.split("/")[0]
 
+    def get_visualizer(self):
         return aim.Run(
             run_hash=self.name,
             experiment=self.ident
         )
 
-    def __del__(self):
+    def release(self):
+        self.logger.info(f"[{self.name}] Data transmission matrix:")
+        for row in self.data_transmitted.get_transmission_matrix_str().split("\n"):
+            self.logger.info(row)
+        if self.visualizer:
+            fig = self.data_transmitted.get_figure()
+            self.writer.track(aim.Figure(fig), name="Data Transmission")
         rpc.shutdown()
+        self.writer.close()
+        self.logger.info(f"[{self.name}] Terminated")

@@ -33,6 +33,8 @@ class Module(metaclass=PostInitCaller):
                     f"[{self.name}] Visualizer enabled. Run `aim up` to start.")
                 self.writer = self.get_visualizer()
 
+        self.data_sent, self.data_received = 0, 0
+
         self.routing_table = {}
         router.register(self)
 
@@ -47,6 +49,7 @@ class Module(metaclass=PostInitCaller):
             hp_table = PrettyTable()
             hp_table.field_names = hps.keys()
             hp_table.add_row(hps.values())
+            self.logger.info(f"[{self.name}] Hyper-parameters:")
             for row in hp_table.get_string().split("\n"):
                 self.logger.info(row)
             if self.visualizer:
@@ -83,7 +86,17 @@ class Module(metaclass=PostInitCaller):
         if callable(path):
             path = f"{'/'.join(path.__self__.name.split('/')[1:])}/{path.__name__}"
         router_msg = RouterMsg(from_=self.name, to=to, path=path, args=args)
-        return self.router.broadcast(router_msg)
+        self.data_sent += router_msg.size
+        if self.visualizer:
+            self.writer.track(self.data_sent, name="Data Sent (bytes)")
+        responses = self.router.broadcast(router_msg)
+        resp_size = 0
+        for response in responses:
+            resp_size += response.size
+        self.data_received += resp_size
+        if self.visualizer:
+            self.writer.track(self.data_received, name="Data Received (bytes)")
+        return responses
 
     def receive(self, router_msg: RouterMsg) -> RouterMsgResponse:
         if self.debug:
@@ -93,12 +106,20 @@ class Module(metaclass=PostInitCaller):
             self.logger.debug(
                 f"Module {self.name} is calling path {router_msg.path} with args {router_msg.args}")
 
+        self.data_received += router_msg.size
+        if self.visualizer:
+            self.writer.track(self.data_received, name="Data Received (bytes)")
+
         ret = RouterMsgResponse(
             from_=self.name,
             to=router_msg.from_,
             data=self.manual_call(
                 router_msg.path,
                 router_msg.args))
+
+        self.data_sent += ret.size
+        if self.visualizer:
+            self.writer.track(self.data_sent, name="Data Sent (bytes)")
 
         if ret.data is None:
             self.logger.warning(
@@ -128,9 +149,6 @@ class Module(metaclass=PostInitCaller):
         return None
 
     def get_visualizer(self):
-        if not os.path.exists("runs"):
-            os.mkdir("runs")
-
         return aim.Run(
             run_hash=self.get_root_name(),
             experiment=self.router.ident
@@ -145,6 +163,9 @@ class Module(metaclass=PostInitCaller):
     def get_path(self):
         return "/".join(self.name.split("/")[1:])
 
-    def __del__(self):
+    def release(self):
+        for module in self.routing_table.values():
+            module.release()
         if self.visualizer:
             self.writer.close()
+        self.logger.info(f"[{self.name}] Terminated")

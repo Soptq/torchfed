@@ -4,6 +4,7 @@ import random
 import torch
 import torch.optim as optim
 
+import torchfed.utils.object
 from torchfed.routers.router import Router
 from torchfed.modules.module import Module
 from torchfed.modules.compute.trainer import Trainer
@@ -170,3 +171,8 @@ if __name__ == '__main__':
         for client in random.sample(clients, 5):
             while client():
                 pass
+
+    for client in clients:
+        client.release()
+    server.release()
+    router.release()

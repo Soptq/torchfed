@@ -40,6 +40,7 @@ class Tester(Module):
         dist_table = PrettyTable()
         dist_table.field_names = dist.keys()
         dist_table.add_row(dist.values())
+        self.logger.info(f"[{self.name}] Dataset distribution:")
         for row in dist_table.get_string().split("\n"):
             self.logger.info(row)
 

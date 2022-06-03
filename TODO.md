@@ -9,12 +9,13 @@
   - [x] Dataset distribution visualization
 - [ ] Hyper-parameter tuning
   - [ ] tuning visualization
-- [ ] Data transmitted statistics
-  - [ ] visualization
+- [x] Data transmitted statistics
+  - [x] visualization
 - [ ] Create benchmarks to validate that our implementations are correct
 - [ ] GPU support
 - [ ] Implement real P2P communication
 - [ ] Make `aim` parse different experiments
-- [ ] RPC error at the end of the training (on MacOS).
+- [x] RPC error at the end of the training (on MacOS).
 - [ ] Model graph visualizer
 - [ ] Clearer experiment ID (Currently it is a hash, which is not easy to understand for human)
+- [ ] Improve `get_object_size` function
