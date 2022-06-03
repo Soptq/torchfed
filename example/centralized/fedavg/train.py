@@ -13,12 +13,13 @@ from torchfed.modules.distribute.weighted_data_distribute import WeightedDataDis
 from torchvision.transforms import transforms
 from torchfed.datasets.CIFAR10 import CIFAR10
 from torchfed.models.CIFARNet import CIFARNet
+from torchfed.managers.dataset_manager import DatasetManager
 
 import config
 
 
 class FedAvgServer(Module):
-    def __init__(self, name, router, visualizer=False, debug=False):
+    def __init__(self, name, router, dataset_manager, visualizer=False, debug=False):
         super(
             FedAvgServer,
             self).__init__(
@@ -28,17 +29,8 @@ class FedAvgServer(Module):
             debug=debug)
         self.model = CIFARNet()
 
-        transform = transforms.Compose([
-            transforms.ToTensor(),
-            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-        ])
-        self.dataset = CIFAR10(
-            "../../data",
-            config.num_users,
-            config.num_labels,
-            download=True,
-            transform=transform)
-        test_dataset = self.dataset.get_bundle_dataset()[1]
+        self.dataset_manager = dataset_manager
+        test_dataset = self.dataset_manager.get_dataset()[1]
         self.test_loader = torch.utils.data.DataLoader(
             test_dataset, batch_size=config.batch_size, shuffle=True)
 
@@ -56,7 +48,7 @@ class FedAvgServer(Module):
 
     def log_hp(self):
         return {
-            "dataset": self.dataset.name,
+            "dataset": self.dataset_manager.dataset.name,
             "model": self.model.name,
         }
 
@@ -73,7 +65,7 @@ class FedAvgServer(Module):
 
 
 class FedAvgClient(Module):
-    def __init__(self, name, router, rank, visualizer=False, debug=False):
+    def __init__(self, name, router, rank, dataset_manager, visualizer=False, debug=False):
         super(
             FedAvgClient,
             self).__init__(
@@ -83,18 +75,9 @@ class FedAvgClient(Module):
             debug=debug)
         self.model = CIFARNet()
 
-        transform = transforms.Compose([
-            transforms.ToTensor(),
-            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-        ])
-        self.dataset = CIFAR10(
-            "../../data",
-            config.num_users,
-            config.num_labels,
-            download=True,
-            transform=transform)
+        self.dataset_manager = dataset_manager
         [self.train_dataset,
-         self.test_dataset] = self.dataset.get_user_dataset(rank)
+         self.test_dataset] = self.dataset_manager.get_user_dataset(rank)
         self.train_loader = torch.utils.data.DataLoader(
             self.train_dataset, batch_size=config.batch_size, shuffle=True)
         self.test_loader = torch.utils.data.DataLoader(
@@ -120,7 +103,7 @@ class FedAvgClient(Module):
     def log_hp(self):
         return {
             "lr": config.lr,
-            "dataset": self.dataset.name,
+            "dataset": self.dataset_manager.dataset.name,
             "model": self.model.name,
             "batch_size": config.batch_size,
             "dataset_size": self.dataset_size,
@@ -155,7 +138,20 @@ if __name__ == '__main__':
     os.environ["MASTER_PORT"] = "5678"
     router = Router(0, 1, visualizer=True)
 
-    server = FedAvgServer("server", router, visualizer=True)
+    transform = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+    ])
+    dataset_manager = DatasetManager("cifar10_manager",
+                                     CIFAR10(
+                                         "../../data",
+                                         config.num_users,
+                                         config.num_labels,
+                                         download=True,
+                                         transform=transform)
+                                     )
+
+    server = FedAvgServer("server", router, dataset_manager, visualizer=True)
     clients = []
     for rank in range(config.num_users):
         clients.append(
@@ -163,6 +159,7 @@ if __name__ == '__main__':
                 f"client_{rank}",
                 router,
                 rank,
+                dataset_manager,
                 visualizer=True))
 
     # train

@@ -6,7 +6,7 @@
 - [ ] `aim` plugin system
 - [x] Connections visualization
 - [ ] Hyper-parameter logging & visualization
-- [ ] Dataset Manager 
+- [x] Dataset Manager 
   - [ ] Dataset distribution visualization
 - [ ] Hyper-parameter tuning
   - [ ] tuning visualization

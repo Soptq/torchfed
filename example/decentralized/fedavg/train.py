@@ -13,6 +13,7 @@ from torchfed.modules.distribute.weighted_data_distribute import WeightedDataDis
 from torchvision.transforms import transforms
 from torchfed.datasets.CIFAR10 import CIFAR10
 from torchfed.models.CIFARNet import CIFARNet
+from torchfed.managers.dataset_manager import DatasetManager
 
 import config
 
@@ -25,6 +26,7 @@ class FedAvgNode(Module):
             rank,
             peers,
             bootstrap_from,
+            dataset_manager,
             visualizer=False,
             debug=False):
         super(
@@ -36,19 +38,10 @@ class FedAvgNode(Module):
             debug=debug)
         self.model = CIFARNet()
 
-        transform = transforms.Compose([
-            transforms.ToTensor(),
-            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-        ])
-        dataset = CIFAR10(
-            "../../data",
-            config.num_users,
-            config.num_labels,
-            download=True,
-            transform=transform)
+        self.dataset_manager = dataset_manager
         [self.train_dataset,
-         self.test_dataset] = dataset.get_user_dataset(rank)
-        self.global_test_dataset = dataset.get_bundle_dataset()[1]
+         self.test_dataset] = self.dataset_manager.get_user_dataset(rank)
+        self.global_test_dataset = self.dataset_manager.get_dataset()[1]
         self.train_loader = torch.utils.data.DataLoader(
             self.train_dataset, batch_size=config.batch_size, shuffle=True)
         self.test_loader = torch.utils.data.DataLoader(
@@ -84,6 +77,18 @@ class FedAvgNode(Module):
 
         router.connect(self, peers)
 
+    def log_hp(self):
+        return {
+            "lr": config.lr,
+            "dataset": self.dataset_manager.dataset.name,
+            "model": self.model.name,
+            "batch_size": config.batch_size,
+            "dataset_size": self.dataset_size,
+            "optimizer": "adam",
+            "loss_fn": "cross entropy loss",
+            "local_iterations": config.local_iterations,
+        }
+
     def execute(self):
         # generate latest local model
         aggregated = self.distributor.aggregate()
@@ -116,6 +121,19 @@ if __name__ == '__main__':
     os.environ["MASTER_PORT"] = "5678"
     router = Router(0, 1, visualizer=True)
 
+    transform = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+    ])
+    dataset_manager = DatasetManager("cifar10_manager",
+                                     CIFAR10(
+                                         "../../data",
+                                         config.num_users,
+                                         config.num_labels,
+                                         download=True,
+                                         transform=transform)
+                                     )
+
     nodes = []
     for rank in range(config.num_users):
         connected_peers = [
@@ -126,6 +144,7 @@ if __name__ == '__main__':
         nodes.append(FedAvgNode(f"node_{rank}", router, rank,
                                 connected_peers,
                                 f"node_{rank - 1}" if rank > 0 else None,
+                                dataset_manager,
                                 visualizer=True))
 
     # train
