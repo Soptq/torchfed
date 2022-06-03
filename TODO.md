@@ -1,13 +1,12 @@
 # TODO
 
 - [x] Dashboard: `aim`
-- [ ] Dashboard prettier (using CSS)
 - [x] Logs replayer
 - [ ] `aim` plugin system
 - [x] Connections visualization
-- [ ] Hyper-parameter logging & visualization
+- [x] Hyper-parameter logging & visualization
 - [x] Dataset Manager 
-  - [ ] Dataset distribution visualization
+  - [x] Dataset distribution visualization
 - [ ] Hyper-parameter tuning
   - [ ] tuning visualization
 - [ ] Data transmitted statistics
@@ -17,3 +16,5 @@
 - [ ] Implement real P2P communication
 - [ ] Make `aim` parse different experiments
 - [ ] RPC error at the end of the training (on MacOS).
+- [ ] Model graph visualizer
+- [ ] Clearer experiment ID (Currently it is a hash, which is not easy to understand for human)

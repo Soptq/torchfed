@@ -1,7 +1,7 @@
 import sys
 import os.path
 import random
-from typing import Optional, Callable
+from typing import Optional, Callable, List
 
 import numpy as np
 
@@ -11,7 +11,7 @@ from torchvision.transforms import transforms
 from tqdm import trange, tqdm
 
 from torchfed.datasets import Dataset
-from torchfed.types.datasets import BundleSplitDataset, UserDataset
+from torchfed.types.datasets import BundleSplitDataset, UserDataset, GlobalDataset
 from torchfed.utils.hash import hex_hash
 
 
@@ -132,10 +132,10 @@ class CIFAR10(Dataset):
             num_samples = len(user_x[user_idx])
             train_len = int(num_samples * 0.75)
             train_user_data = UserDataset(
-                user_idx, user_x[user_idx][:train_len], user_y[user_idx][:train_len])
+                user_idx, user_x[user_idx][:train_len], user_y[user_idx][:train_len], self.num_classes)
             test_user_data = UserDataset(user_idx,
                                          user_x[user_idx][train_len:],
-                                         user_y[user_idx][train_len:])
+                                         user_y[user_idx][train_len:], self.num_classes)
             split_dataset.add_user_dataset(train_user_data, test_user_data)
         with open(os.path.join(dataset_path, data_file_name), 'wb') as f:
             torch.save(split_dataset, f)
@@ -149,12 +149,18 @@ class CIFAR10(Dataset):
     def get_user_dataset(self, user_idx) -> UserDataset:
         return self.split_dataset[user_idx]
 
-    def get_bundle_dataset(self):
+    def get_dataset(self) -> List[GlobalDataset]:
         if hasattr(self, "train_dataset") and hasattr(self, "test_dataset"):
-            return self.train_dataset, self.test_dataset
+            return [
+                GlobalDataset(self.train_dataset, self.num_classes),
+                GlobalDataset(self.test_dataset, self.num_classes)
+            ]
         else:
             train_dataset = torchvision.datasets.CIFAR10(
                 self.root, True, self.transform, self.target_transform, self.download)
             test_dataset = torchvision.datasets.CIFAR10(
                 self.root, False, self.transform, self.target_transform, self.download)
-            return train_dataset, test_dataset
+            return [
+                GlobalDataset(train_dataset, self.num_classes),
+                GlobalDataset(test_dataset, self.num_classes)
+            ]
