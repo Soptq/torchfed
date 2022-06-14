@@ -130,8 +130,7 @@ class DataTransmitted:
 
     def get_transmission_matrix_str(self):
         matrix = PrettyTable()
-        axis = list(self._data_transmitted.keys())
-        axis.sort()
+        axis = sorted(self._data_transmitted.keys())
         matrix.field_names = ["(bytes)"] + axis
         for from_node in axis:
             row = [from_node]
@@ -142,8 +141,7 @@ class DataTransmitted:
 
     def get_figure(self):
         data = []
-        axis = list(self._data_transmitted.keys())
-        axis.sort()
+        axis = sorted(self._data_transmitted.keys())
         for from_node in axis:
             row = []
             for to_node in axis:
@@ -158,17 +156,19 @@ class DataTransmitted:
                 title=go.layout.yaxis.Title(
                     text='Sender',
                 )
-            ))
-        fig = go.Figure(data=go.Heatmap(
-            hovertemplate='Sender: %{y}<br>Receiver: %{x}<br>Size (bytes): %{z}<extra></extra>',
-            z=data,
-            x=axis,
-            y=axis,
-            xgap=3,
-            ygap=3,
-            hoverongaps=False,
-            showscale=False,
-        ), layout=layout)
+        ))
+        fig = go.Figure(
+            data=go.Heatmap(
+                hovertemplate='Sender: %{y}<br>Receiver: %{x}<br>Size (bytes): %{z}<extra></extra>',
+                z=data,
+                x=axis,
+                y=axis,
+                xgap=3,
+                ygap=3,
+                hoverongaps=False,
+                showscale=False,
+            ),
+            layout=layout)
         return fig
 
 

@@ -44,7 +44,8 @@ class Module(metaclass=PostInitCaller):
         if self.is_root():
             self.hparams = self.set_hparams()
 
-            if self.override_hparams is not None and isinstance(self.override_hparams, dict):
+            if self.override_hparams is not None and isinstance(
+                    self.override_hparams, dict):
                 for key, value in self.override_hparams.items():
                     self.hparams[key] = value
 

@@ -170,7 +170,8 @@ class Router:
 
     def refresh_ident(self):
         self.ident = hex_hash(f"{time.time_ns()}")
-        self.logger.info(f"[{self.name}] Identification refreshed: {self.ident}")
+        self.logger.info(
+            f"[{self.name}] Identification refreshed: {self.ident}")
 
     def release(self):
         self.logger.info(f"[{self.name}] Data transmission matrix:")

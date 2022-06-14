@@ -1,7 +1,7 @@
 install:
 	pip install -r requirements.txt
 
-lint-fix:
+fmt:
 	autopep8 --in-place --aggressive --aggressive --recursive ./torchfed
 	autopep8 --in-place --aggressive --aggressive --recursive ./example
 	autopep8 --in-place --aggressive --aggressive --recursive ./tests
