@@ -29,6 +29,7 @@ class Trainer(Module):
         self.dataloader = dataloader
         self.optimizer = optimizer
         self.loss_fn = loss_fn
+        self.metrics = None
 
         self._log_dataset_distribution()
 
@@ -37,6 +38,9 @@ class Trainer(Module):
         #     inputs, _ = next(iter(self.dataloader))
         #     self.writer.add_graph(self.model, inputs)
         #     # graph_writer.close()
+
+    def get_metrics(self):
+        return self.metrics
 
     def _log_dataset_distribution(self):
         num_classes = self.dataloader.dataset.num_classes
@@ -73,10 +77,11 @@ class Trainer(Module):
             self.optimizer.step()
             running_loss += loss.item()
             counter += 1
+        self.metrics = running_loss / counter
         self.logger.info(
-            f'[{self.name}] Training Loss: {running_loss / counter:.3f}')
+            f'[{self.name}] Training Loss: {self.metrics:.3f}')
         if self.visualizer:
             self.writer.track(
-                running_loss / counter,
+                self.metrics,
                 name=f"Loss/Train/{self.get_path()}")
         yield False

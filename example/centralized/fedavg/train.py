@@ -4,7 +4,6 @@ import random
 import torch
 import torch.optim as optim
 
-import torchfed.utils.object
 from torchfed.routers.router import Router
 from torchfed.modules.module import Module
 from torchfed.modules.compute.trainer import Trainer
@@ -33,7 +32,7 @@ class FedAvgServer(Module):
         self.dataset_manager = dataset_manager
         test_dataset = self.dataset_manager.get_dataset()[1]
         self.test_loader = torch.utils.data.DataLoader(
-            test_dataset, batch_size=config.batch_size, shuffle=True)
+            test_dataset, batch_size=self.hparams["batch_size"], shuffle=True)
 
         self.distributor = self.register_submodule(
             WeightedDataDistributing, "distributor", router)
@@ -47,10 +46,9 @@ class FedAvgServer(Module):
 
         self.distributor.update(self.model.state_dict())
 
-    def log_hp(self):
+    def set_hparams(self):
         return {
-            "dataset": self.dataset_manager.dataset.name,
-            "model": self.model.name,
+            "batch_size": config.batch_size,
         }
 
     def execute(self):
@@ -80,13 +78,13 @@ class FedAvgClient(Module):
         [self.train_dataset,
          self.test_dataset] = self.dataset_manager.get_user_dataset(rank)
         self.train_loader = torch.utils.data.DataLoader(
-            self.train_dataset, batch_size=config.batch_size, shuffle=True)
+            self.train_dataset, batch_size=self.hparams["batch_size"], shuffle=True)
         self.test_loader = torch.utils.data.DataLoader(
-            self.test_dataset, batch_size=config.batch_size, shuffle=True)
+            self.test_dataset, batch_size=self.hparams["batch_size"], shuffle=True)
 
         self.dataset_size = len(self.train_dataset)
-        self.optimizer = optim.Adam(self.model.parameters(), lr=config.lr)
-        self.loss_fn = torch.nn.CrossEntropyLoss()
+        self.optimizer = getattr(optim, self.hparams["optimizer"])(self.model.parameters(), lr=self.hparams["lr"])
+        self.loss_fn = getattr(torch.nn, self.hparams["loss_fn"])()
 
         self.trainer = self.register_submodule(
             Trainer,
@@ -101,15 +99,12 @@ class FedAvgClient(Module):
 
         router.connect(self, ["server"])
 
-    def log_hp(self):
+    def set_hparams(self):
         return {
             "lr": config.lr,
-            "dataset": self.dataset_manager.dataset.name,
-            "model": self.model.name,
             "batch_size": config.batch_size,
-            "dataset_size": self.dataset_size,
-            "optimizer": "adam",
-            "loss_fn": "cross entropy loss",
+            "optimizer": "Adam",
+            "loss_fn": "CrossEntropyLoss",
             "local_iterations": config.local_iterations,
         }
 
@@ -121,7 +116,7 @@ class FedAvgClient(Module):
         self.model.load_state_dict(global_model)
 
         self.tester()
-        for i in range(config.local_iterations):
+        for i in range(self.hparams["local_iterations"]):
             self.trainer()
 
         self.send(

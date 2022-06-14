@@ -26,8 +26,12 @@ class Tester(Module):
             debug=debug)
         self.model = model
         self.dataloader = dataloader
+        self.metrics = None
 
         self._log_dataset_distribution()
+
+    def get_metrics(self):
+        return self.metrics
 
     def _log_dataset_distribution(self):
         num_classes = self.dataloader.dataset.num_classes
@@ -63,10 +67,11 @@ class Tester(Module):
                 _, predicted = torch.max(outputs.data, 1)
                 total += labels.size(0)
                 correct += (predicted == labels).sum().item()
+        self.metrics = 100 * correct / total
         self.logger.info(
-            f'[{self.name}] Test Accuracy: {100 * correct / total:.3f} %')
+            f'[{self.name}] Test Accuracy: {self.metrics:.3f} %')
         if self.visualizer:
             self.writer.track(
-                100 * correct / total,
+                self.metrics,
                 name=f"Accuracy/Test/{self.get_path()}")
         yield False

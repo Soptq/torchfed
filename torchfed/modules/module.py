@@ -1,5 +1,3 @@
-import os
-
 import aim
 
 from torchfed.routers.router_msg import RouterMsg, RouterMsgResponse
@@ -19,11 +17,14 @@ class Module(metaclass=PostInitCaller):
             router,
             visualizer=False,
             writer=None,
+            override_hparams=None,
             debug=False):
         self.name = name
         self.debug = debug
         self.router = router
         self.logger = get_logger(router.ident, self.get_root_name())
+        self.override_hparams = override_hparams
+        self.hparams = None
 
         self.visualizer = visualizer
         self.writer = writer
@@ -40,20 +41,27 @@ class Module(metaclass=PostInitCaller):
 
         self.execute_gen = self.execute()
 
-    def __post__init__(self):
         if self.is_root():
-            hps = self.log_hp()
-            hps["name"] = self.name
-            hps["visualizer"] = self.visualizer
-            hps["debug"] = self.debug
+            self.hparams = self.set_hparams()
+
+            if self.override_hparams is not None and isinstance(self.override_hparams, dict):
+                for key, value in self.override_hparams.items():
+                    self.hparams[key] = value
+
+            self.hparams["name"] = self.name
+            self.hparams["visualizer"] = self.visualizer
+            self.hparams["debug"] = self.debug
             hp_table = PrettyTable()
-            hp_table.field_names = hps.keys()
-            hp_table.add_row(hps.values())
+            hp_table.field_names = self.hparams.keys()
+            hp_table.add_row(self.hparams.values())
             self.logger.info(f"[{self.name}] Hyper-parameters:")
             for row in hp_table.get_string().split("\n"):
                 self.logger.info(row)
             if self.visualizer:
-                self.writer['hparams'] = hps
+                self.writer['hparams'] = self.hparams
+
+    def __post__init__(self):
+        pass
 
     def __call__(self, *args, **kwargs):
         _continue = next(self.execute_gen)
@@ -61,11 +69,14 @@ class Module(metaclass=PostInitCaller):
             self.execute_gen = self.execute()
         return _continue
 
-    def log_hp(self):
+    def set_hparams(self):
         return {}
 
     def execute(self):
         yield False
+
+    def get_metrics(self):
+        return None
 
     def register_submodule(self, module: Generic[T], name, router, *args) -> T:
         submodule_name = f"{self.name}/{name}"
@@ -150,7 +161,7 @@ class Module(metaclass=PostInitCaller):
 
     def get_visualizer(self):
         return aim.Run(
-            run_hash=self.get_root_name(),
+            run_hash=f"{self.get_root_name()}-{self.router.ident[:4]}",
             experiment=self.router.ident
         )
 

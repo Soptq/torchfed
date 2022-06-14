@@ -7,13 +7,13 @@
 - [x] Hyper-parameter logging & visualization
 - [x] Dataset Manager 
   - [x] Dataset distribution visualization
-- [ ] Hyper-parameter tuning
-  - [ ] tuning visualization
+- [x] Hyper-parameter tuning
+  - [x] tuning visualization
 - [x] Data transmitted statistics
   - [x] visualization
 - [ ] Create benchmarks to validate that our implementations are correct
 - [ ] GPU support
-- [ ] Implement real P2P communication
+- [ ] **Implement real P2P communication**
 - [ ] Make `aim` parse different experiments
 - [x] RPC error at the end of the training (on MacOS).
 - [ ] Model graph visualizer

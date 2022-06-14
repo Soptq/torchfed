@@ -17,6 +17,8 @@ from torchfed.managers.dataset_manager import DatasetManager
 
 import config
 
+import optuna
+
 
 class FedAvgNode(Module):
     def __init__(
@@ -28,6 +30,7 @@ class FedAvgNode(Module):
             bootstrap_from,
             dataset_manager,
             visualizer=False,
+            override_hparams=None,
             debug=False):
         super(
             FedAvgNode,
@@ -35,6 +38,7 @@ class FedAvgNode(Module):
             name,
             router,
             visualizer=visualizer,
+            override_hparams=override_hparams,
             debug=debug)
         self.model = CIFARNet()
 
@@ -86,6 +90,9 @@ class FedAvgNode(Module):
             "local_iterations": config.local_iterations,
         }
 
+    def get_metrics(self):
+        return self.tester.get_metrics()
+
     def execute(self):
         # generate latest local model
         aggregated = self.distributor.aggregate()
@@ -131,29 +138,59 @@ if __name__ == '__main__':
                                          transform=transform)
                                      )
 
-    nodes = []
-    for rank in range(config.num_users):
-        connected_peers = [
-            f"node_{peer_rank}" for peer_rank in random.sample(
-                range(
-                    config.num_users), 5)]
-        print(f"node {rank} will connect to {connected_peers}")
-        nodes.append(FedAvgNode(f"node_{rank}", router, rank,
-                                connected_peers,
-                                f"node_{rank - 1}" if rank > 0 else None,
-                                dataset_manager,
-                                visualizer=True))
+    def objective(trial):
+        hparams = {
+            "lr": trial.suggest_categorical("lr", [1e-1, 1e-2, 1e-3]),
+            "optimizer": trial.suggest_categorical("optimizer", ["Adam", "RMSprop", "SGD"]),
+        }
+        router.refresh_ident()
+        nodes = []
+        for rank in range(config.num_users):
+            connected_peers = [
+                f"node_{peer_rank}" for peer_rank in random.sample(
+                    range(
+                        config.num_users), 5)]
+            print(f"node {rank} will connect to {connected_peers}")
+            nodes.append(FedAvgNode(f"node_{rank}", router, rank,
+                                    connected_peers,
+                                    f"node_{rank - 1}" if rank > 0 else None,
+                                    dataset_manager,
+                                    visualizer=True,
+                                    override_hparams=hparams
+                                    )
+                         )
 
-    # train
-    for epoch in range(config.num_epochs):
-        print(f"---------- Epoch {epoch} ----------")
-        while True:
-            _continue = False
-            for node in nodes:
-                _continue |= node()
-            if not _continue:
-                break
+        # train
+        for epoch in range(config.num_epochs):
+            print(f"---------- Epoch {epoch} ----------")
+            while True:
+                _continue = False
+                for node in nodes:
+                    _continue |= node()
+                if not _continue:
+                    break
 
-    for node in nodes:
-        node.release()
+        metrics = min([node.get_metrics() for node in nodes])
+        print(f"Metrics: {metrics}")
+
+        for node in nodes:
+            node.release()
+
+        return metrics
+
+    study = optuna.create_study(direction="maximize")
+    study.optimize(objective, n_trials=5)
+
+    print("Study statistics: ")
+    print("  Number of finished trials: ", len(study.trials))
+
+    print("Best trial:")
+    trial = study.best_trial
+
+    print("  Value: ", trial.value)
+
+    print("  Params: ")
+    for key, value in trial.params.items():
+        print("    {}: {}".format(key, value))
+
     router.release()
