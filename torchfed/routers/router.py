@@ -75,9 +75,11 @@ class Router:
             for peer in peers:
                 if peer not in self.peers_table[module.name]:
                     self.peers_table[module.name].append(peer)
-                    self.network_plotter.add_edge(module.name, peer)
         else:
             self.peers_table[module.name] = peers
+
+        for peer in peers:
+            self.network_plotter.add_edge(module.name, peer)
 
         if self.visualizer:
             fig = self.network_plotter.get_figure()

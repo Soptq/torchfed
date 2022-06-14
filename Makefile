@@ -8,3 +8,9 @@ lint-fix:
 
 freeze:
 	pip freeze > requirements.txt
+
+clean:
+	rm -rf ./example/centralized/fedavg/.aim
+	rm -rf ./example/centralized/fedavg/logs
+	rm -rf ./example/decentralized/fedavg/.aim
+	rm -rf ./example/decentralized/fedavg/logs

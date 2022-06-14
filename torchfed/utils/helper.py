@@ -171,7 +171,9 @@ class DataTransmitted:
         ), layout=layout)
         return fig
 
+
 if __name__ == '__main__':
+    # import random
     # ploter = NetworkConnectionsPlotter()
     # for i in range(20):
     #     for j in random.sample(range(20), 5):
