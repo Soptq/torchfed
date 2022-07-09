@@ -19,7 +19,13 @@ import config
 
 
 class FedAvgServer(Module):
-    def __init__(self, name, router, dataset_manager, visualizer=False, debug=False):
+    def __init__(
+            self,
+            name,
+            router,
+            dataset_manager,
+            visualizer=False,
+            debug=False):
         super(
             FedAvgServer,
             self).__init__(
@@ -64,7 +70,14 @@ class FedAvgServer(Module):
 
 
 class FedAvgClient(Module):
-    def __init__(self, name, router, rank, dataset_manager, visualizer=False, debug=False):
+    def __init__(
+            self,
+            name,
+            router,
+            rank,
+            dataset_manager,
+            visualizer=False,
+            debug=False):
         super(
             FedAvgClient,
             self).__init__(
@@ -83,7 +96,9 @@ class FedAvgClient(Module):
             self.test_dataset, batch_size=self.hparams["batch_size"], shuffle=True)
 
         self.dataset_size = len(self.train_dataset)
-        self.optimizer = getattr(optim, self.hparams["optimizer"])(self.model.parameters(), lr=self.hparams["lr"])
+        self.optimizer = getattr(
+            optim, self.hparams["optimizer"])(
+            self.model.parameters(), lr=self.hparams["lr"])
         self.loss_fn = getattr(torch.nn, self.hparams["loss_fn"])()
 
         self.trainer = self.register_submodule(

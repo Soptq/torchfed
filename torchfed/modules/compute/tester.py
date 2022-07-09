@@ -53,7 +53,8 @@ class Tester(Module):
                 distribution=labels,
                 bin_count=num_classes
             )
-            self.writer.track(dist, name=f"Dataset Distribution/{self.get_path()}")
+            self.writer.track(
+                dist, name=f"Dataset Distribution/{self.get_path()}")
 
     def execute(self):
         self.model.eval()

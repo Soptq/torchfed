@@ -111,6 +111,7 @@ class FedAvgNode(Module):
                 (self.name,
                  self.dataset_size,
                  self.model.state_dict()))
+
         yield False
 
 

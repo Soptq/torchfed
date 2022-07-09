@@ -7,7 +7,9 @@ class Distribution(OriginDistribution):
         super().__init__(distribution, bin_count)
         # convert to np.histogram
         try:
-            np_histogram = np.histogram(distribution, bins=bin_count, range=(-0.5, bin_count - 0.5))
+            np_histogram = np.histogram(
+                distribution, bins=bin_count, range=(-0.5, bin_count - 0.5))
         except TypeError:
-            raise TypeError(f'Cannot convert to aim.Distribution. Unsupported type {type(distribution)}.')
+            raise TypeError(
+                f'Cannot convert to aim.Distribution. Unsupported type {type(distribution)}.')
         self._from_np_histogram(np_histogram)

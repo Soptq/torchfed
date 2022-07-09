@@ -96,7 +96,8 @@ class CIFAR10(Dataset):
         for user_idx in trange(num_users):
             for label_idx in range(num_labels_for_users):
                 assigned_label = (user_idx + label_idx) % self.num_classes
-                user_x[user_idx] += split_inputs[assigned_label][idx[assigned_label]: idx[assigned_label] + 10].tolist()
+                user_x[user_idx] += split_inputs[assigned_label][idx[assigned_label]
+                    : idx[assigned_label] + 10].tolist()
                 user_y[user_idx] += (assigned_label * np.ones(10)).tolist()
                 idx[assigned_label] += 10
 
@@ -115,7 +116,8 @@ class CIFAR10(Dataset):
                     num_samples *= 2
                 if idx[assigned_label] + \
                         num_samples < len(split_inputs[assigned_label]):
-                    user_x[user_idx] += split_inputs[assigned_label][idx[assigned_label]: idx[assigned_label] + num_samples].tolist()
+                    user_x[user_idx] += split_inputs[assigned_label][idx[assigned_label]
+                        : idx[assigned_label] + num_samples].tolist()
                     user_y[user_idx] += (assigned_label *
                                          np.ones(num_samples)).tolist()
                     idx[assigned_label] += num_samples
@@ -133,11 +135,14 @@ class CIFAR10(Dataset):
 
             num_samples = len(user_x[user_idx])
             train_len = int(num_samples * 0.75)
-            train_user_data = UserDataset(
-                user_idx, user_x[user_idx][:train_len], user_y[user_idx][:train_len], self.num_classes)
+            train_user_data = UserDataset(user_idx,
+                                          user_x[user_idx][:train_len],
+                                          user_y[user_idx][:train_len],
+                                          self.num_classes)
             test_user_data = UserDataset(user_idx,
                                          user_x[user_idx][train_len:],
-                                         user_y[user_idx][train_len:], self.num_classes)
+                                         user_y[user_idx][train_len:],
+                                         self.num_classes)
             split_dataset.add_user_dataset(train_user_data, test_user_data)
         with open(os.path.join(dataset_path, data_file_name), 'wb') as f:
             torch.save(split_dataset, f)

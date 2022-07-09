@@ -23,7 +23,8 @@ def get_object_size(obj):
         size = 0
         if isinstance(obj, dict):
             for inner_obj_k, inner_obj_v in obj.items():
-                size += (get_object_size(inner_obj_k) + get_object_size(inner_obj_v))
+                size += (get_object_size(inner_obj_k) +
+                         get_object_size(inner_obj_v))
         else:
             for inner_obj in obj:
                 size += get_object_size(inner_obj)
