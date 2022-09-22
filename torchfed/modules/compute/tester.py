@@ -3,8 +3,6 @@ import torch
 from torchfed.modules.module import Module
 from torchfed.third_party.aim_extension.distribution import Distribution
 
-import aim
-
 
 class Tester(Module):
     def __init__(
@@ -56,7 +54,7 @@ class Tester(Module):
             self.writer.track(
                 dist, name=f"Dataset Distribution/{self.get_path()}")
 
-    def execute(self):
+    def test(self):
         self.model.eval()
         correct = 0
         total = 0
@@ -75,4 +73,3 @@ class Tester(Module):
             self.writer.track(
                 self.metrics,
                 name=f"Accuracy/Test/{self.get_path()}")
-        yield False

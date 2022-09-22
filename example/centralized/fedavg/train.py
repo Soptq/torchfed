@@ -57,8 +57,8 @@ class FedAvgServer(Module):
             "batch_size": config.batch_size,
         }
 
-    def execute(self):
-        self.global_tester()
+    def run(self):
+        self.global_tester.test()
 
         aggregated = self.distributor.aggregate()
         if aggregated is None:
@@ -66,7 +66,6 @@ class FedAvgServer(Module):
         else:
             self.model.load_state_dict(aggregated)
         self.distributor.update(aggregated)
-        yield False
 
 
 class FedAvgClient(Module):
@@ -123,16 +122,16 @@ class FedAvgClient(Module):
             "local_iterations": config.local_iterations,
         }
 
-    def execute(self):
+    def run(self):
         global_model = self.send(
             router.get_peers(self)[0],
             "distributor/download",
             ())[0].data
         self.model.load_state_dict(global_model)
 
-        self.tester()
+        self.tester.test()
         for i in range(self.hparams["local_iterations"]):
-            self.trainer()
+            self.trainer.train()
 
         self.send(
             router.get_peers(self)[0],
@@ -140,7 +139,6 @@ class FedAvgClient(Module):
             (self.name,
              self.dataset_size,
              self.model.state_dict()))
-        yield False
 
 
 if __name__ == '__main__':
@@ -176,11 +174,9 @@ if __name__ == '__main__':
     # train
     for epoch in range(config.num_epochs):
         print(f"---------- Epoch {epoch} ----------")
-        while server():
-            pass
+        server.run()
         for client in random.sample(clients, 5):
-            while client():
-                pass
+            client.run()
 
     for client in clients:
         client.release()

@@ -24,9 +24,6 @@ class WeightedDataDistributing(Module):
         self.storage = {}
         self.shared = None
 
-    def execute(self):
-        yield False
-
     @exposed
     def upload(self, from_, weight, data):
         self.total_weight += weight

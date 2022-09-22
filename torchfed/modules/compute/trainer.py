@@ -65,7 +65,7 @@ class Trainer(Module):
             self.writer.track(
                 dist, name=f"Dataset Distribution/{self.get_path()}")
 
-    def execute(self):
+    def train(self):
         self.model.train()
         counter = 0
         running_loss = 0.0
@@ -85,4 +85,3 @@ class Trainer(Module):
             self.writer.track(
                 self.metrics,
                 name=f"Loss/Train/{self.get_path()}")
-        yield False

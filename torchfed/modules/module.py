@@ -1,7 +1,7 @@
 import aim
 
 from torchfed.routers.router_msg import RouterMsg, RouterMsgResponse
-from typing import TypeVar, Generic
+from typing import TypeVar, Type
 from torchfed.logging import get_logger
 from torchfed.types.meta import PostInitCaller
 
@@ -39,8 +39,6 @@ class Module(metaclass=PostInitCaller):
         self.routing_table = {}
         router.register(self)
 
-        self.execute_gen = self.execute()
-
         if self.is_root():
             self.hparams = self.set_hparams()
 
@@ -64,22 +62,13 @@ class Module(metaclass=PostInitCaller):
     def __post__init__(self):
         pass
 
-    def __call__(self, *args, **kwargs):
-        _continue = next(self.execute_gen)
-        if not _continue:
-            self.execute_gen = self.execute()
-        return _continue
-
     def set_hparams(self):
         return {}
-
-    def execute(self):
-        yield False
 
     def get_metrics(self):
         return None
 
-    def register_submodule(self, module: Generic[T], name, router, *args) -> T:
+    def register_submodule(self, module: Type[T], name, router, *args) -> T:
         submodule_name = f"{self.name}/{name}"
         if submodule_name in self.routing_table:
             self.logger.error("Cannot register modules with the same name")
@@ -153,7 +142,7 @@ class Module(metaclass=PostInitCaller):
         elif hasattr(self, target):
             entrance = getattr(self, target)
             if callable(entrance) and (
-                not check_exposed or (
+                    not check_exposed or (
                     hasattr(
                         entrance,
                         "exposed") and entrance.exposed)):

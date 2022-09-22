@@ -23,9 +23,6 @@ class DataDistributing(Module):
         self.storage = {}
         self.shared = None
 
-    def execute(self):
-        yield False
-
     @exposed
     def upload(self, from_, data):
         self.storage[from_] = data

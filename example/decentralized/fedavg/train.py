@@ -88,7 +88,7 @@ class FedAvgNode(Module):
             "local_iterations": config.local_iterations,
         }
 
-    def execute(self):
+    def aggregate(self):
         # generate latest local model
         aggregated = self.distributor.aggregate()
         if aggregated is None:
@@ -96,13 +96,15 @@ class FedAvgNode(Module):
         else:
             self.model.load_state_dict(aggregated)
         self.distributor.update(aggregated)
-        yield True
+
+    def train_and_test(self):
         # train and tests
-        self.global_tester()
-        self.tester()
+        self.global_tester.test()
+        self.tester.test()
         for i in range(self.hparams["local_iterations"]):
-            self.trainer()
-        yield True
+            self.trainer.train()
+
+    def upload(self):
         # upload to peers
         for peer in router.get_peers(self):
             self.send(
@@ -111,8 +113,6 @@ class FedAvgNode(Module):
                 (self.name,
                  self.dataset_size,
                  self.model.state_dict()))
-
-        yield False
 
 
 if __name__ == '__main__':
@@ -150,12 +150,12 @@ if __name__ == '__main__':
     # train
     for epoch in range(config.num_epochs):
         print(f"---------- Epoch {epoch} ----------")
-        while True:
-            _continue = False
-            for node in nodes:
-                _continue |= node()
-            if not _continue:
-                break
+        for node in nodes:
+            node.aggregate()
+        for node in nodes:
+            node.train_and_test()
+        for node in nodes:
+            node.upload()
 
     for node in nodes:
         node.release()
