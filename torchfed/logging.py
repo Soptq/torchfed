@@ -11,7 +11,7 @@ def make_filter(name):
     return _filter
 
 
-def get_logger(router_id, name, level="INFO"):
+def get_logger(exp_id, name, level="INFO"):
     if len(existed_logger_name) == 0:
         logger.remove()
     if name in existed_logger_name:
@@ -25,7 +25,7 @@ def get_logger(router_id, name, level="INFO"):
         filter=make_filter(name)
     )
     logger.add(
-        "logs/{router_id}/{name}.log".format(router_id=router_id, name=name),
+        "logs/{exp_id}/{name}.log".format(exp_id=exp_id, name=name),
         backtrace=True,
         diagnose=True,
         level=level,

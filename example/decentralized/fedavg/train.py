@@ -4,7 +4,7 @@ import random
 import torch
 import torch.optim as optim
 
-from torchfed.routers.router import Router
+from torchfed.routers import TorchDistributedRPCRouter
 from torchfed.modules.module import Module
 from torchfed.modules.compute.trainer import Trainer
 from torchfed.modules.compute.tester import Tester
@@ -21,18 +21,14 @@ import config
 class FedAvgNode(Module):
     def __init__(
             self,
-            name,
             router,
             rank,
-            peers,
-            bootstrap_from,
             dataset_manager,
             visualizer=False,
             debug=False):
         super(
             FedAvgNode,
             self).__init__(
-            name,
             router,
             visualizer=visualizer,
             debug=debug)
@@ -70,14 +66,7 @@ class FedAvgNode(Module):
         self.global_tester = self.register_submodule(
             Tester, "global_tester", router, self.model, self.global_test_loader)
 
-        if bootstrap_from is not None:
-            global_model = self.send(
-                bootstrap_from, "distributor/download", ())[0].data
-            self.model.load_state_dict(global_model)
-
         self.distributor.update(self.model.state_dict())
-
-        router.connect(self, peers)
 
     def set_hparams(self):
         return {
@@ -87,6 +76,14 @@ class FedAvgNode(Module):
             "loss_fn": "CrossEntropyLoss",
             "local_iterations": config.local_iterations,
         }
+
+    def bootstrap(self, bootstrap_from):
+        if bootstrap_from is not None:
+            global_model = self.send(
+                bootstrap_from, "distributor/download", ())[0].data
+            self.model.load_state_dict(global_model)
+
+        self.distributor.update(self.model.state_dict())
 
     def aggregate(self):
         # generate latest local model
@@ -119,7 +116,7 @@ if __name__ == '__main__':
     # init
     os.environ["MASTER_ADDR"] = "localhost"
     os.environ["MASTER_PORT"] = "5678"
-    router = Router(0, 1, visualizer=True)
+    router = TorchDistributedRPCRouter(0, 1, visualizer=True)
 
     transform = transforms.Compose([
         transforms.ToTensor(),
@@ -136,16 +133,24 @@ if __name__ == '__main__':
 
     nodes = []
     for rank in range(config.num_users):
-        connected_peers = [
-            f"node_{peer_rank}" for peer_rank in random.sample(
-                range(
-                    config.num_users), 5)]
-        print(f"node {rank} will connect to {connected_peers}")
-        nodes.append(FedAvgNode(f"node_{rank}", router, rank,
-                                connected_peers,
-                                f"node_{rank - 1}" if rank > 0 else None,
+        nodes.append(FedAvgNode(router, rank,
                                 dataset_manager,
                                 visualizer=True))
+
+    # bootstrap
+    boostrap_node = nodes[0].get_node_name()
+    for node in nodes:
+        router.connect(node, [boostrap_node])
+        node.bootstrap(boostrap_node)
+        router.disconnect(node, [boostrap_node])
+
+    # connect
+    for node in nodes:
+        current_node_name = node.get_node_name()
+        other_nodes_names = [n.get_node_name() for n in nodes if n.get_node_name() != current_node_name]
+        connected_peers = random.sample(other_nodes_names, 5)
+        print(f"node {node.get_node_name()} will connect to {connected_peers}")
+        router.connect(node, connected_peers)
 
     # train
     for epoch in range(config.num_epochs):

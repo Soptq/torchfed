@@ -7,16 +7,16 @@ from torchfed.utils.decorator import exposed
 class WeightedDataDistributing(Module):
     def __init__(
             self,
-            name,
             router,
+            alias=None,
             visualizer=False,
             writer=None,
             debug=False):
         super(
             WeightedDataDistributing,
             self).__init__(
-            name,
             router,
+            alias=alias,
             visualizer=visualizer,
             writer=writer,
             debug=debug)

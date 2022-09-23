@@ -1,11 +1,7 @@
-import os
 import time
 from typing import List
 
 import aim
-
-import torch
-import torch.distributed.rpc as rpc
 
 from .router_msg import RouterMsg, RouterMsgResponse
 from torchfed.logging import get_logger
@@ -18,28 +14,17 @@ class Router:
 
     def __init__(
             self,
-            rank,
-            world_size,
-            backend=None,
-            rpc_backend_options=None,
+            alias=None,
             visualizer=False,
             debug=False):
-        if backend is None:
-            backend = rpc.BackendType.TENSORPIPE
-
-        if rpc_backend_options is None:
-            rpc_backend_options = rpc.TensorPipeRpcBackendOptions(
-                init_method="env://",
-                rpc_timeout=0
-            )
         Router.context = self
-        self.name = f"router_{rank}"
-        self.rank = rank
-        self.world_size = world_size
+        self.ident = hex_hash(f"{time.time_ns()}")
+        self.exp_id = hex_hash(f"{time.time_ns()}")
+        self.alias = alias
+        self.name = self.get_router_name()
         self.visualizer = visualizer
         self.debug = debug
-        self.ident = hex_hash(f"{time.time_ns()}")
-        self.logger = get_logger(self.ident, self.name)
+        self.logger = get_logger(self.exp_id, self.name)
 
         if self.visualizer:
             self.logger.info(
@@ -52,14 +37,9 @@ class Router:
         self.network_plotter = NetworkConnectionsPlotter()
         self.data_transmitted = DataTransmitted()
 
-        torch.distributed.rpc.init_rpc(
-            self.name, backend, rank, world_size, rpc_backend_options)
-
-        self.logger.info(f"[{self.name}] Initialized completed: {self.ident}")
+        self.logger.info(f"[{self.name}] Initialized completed. Router ID: {self.ident}. Experiment ID: {self.exp_id}")
 
     def register(self, module):
-        if not module.is_root():
-            return
         if module.name not in self.owned_nodes.keys():
             self.owned_nodes[module.name] = module.receive
 
@@ -113,28 +93,10 @@ class Router:
             self.get_root_name(router_msg.to),
             router_msg.size
         )
+        return self.impl_broadcast(router_msg)
 
-        futs, rets = [], []
-        for rank in range(self.world_size):
-            futs.append(
-                rpc.rpc_async(
-                    f"router_{rank}",
-                    Router.receive,
-                    args=(
-                        router_msg,
-                    )))
-        for fut in futs:
-            resp = fut.wait()
-            if resp is not None:
-                rets.append(resp)
-
-        for ret in rets:
-            self.data_transmitted.add(
-                self.get_root_name(ret.from_),
-                self.get_root_name(ret.to),
-                ret.size
-            )
-        return rets
+    def impl_broadcast(self, router_msg: RouterMsg) -> List[RouterMsgResponse]:
+        raise NotImplementedError
 
     @staticmethod
     def receive(router_msg: RouterMsg):
@@ -165,13 +127,13 @@ class Router:
     def get_visualizer(self):
         return aim.Run(
             run_hash=self.name,
-            experiment=self.ident
+            experiment=self.exp_id
         )
 
-    def refresh_ident(self):
-        self.ident = hex_hash(f"{time.time_ns()}")
+    def refresh_exp_id(self):
+        self.exp_id = hex_hash(f"{time.time_ns()}")
         self.logger.info(
-            f"[{self.name}] Identification refreshed: {self.ident}")
+            f"[{self.name}] Experiment ID refreshed: {self.exp_id}")
 
     def release(self):
         self.logger.info(f"[{self.name}] Data transmission matrix:")
@@ -180,6 +142,14 @@ class Router:
         if self.visualizer:
             fig = self.data_transmitted.get_figure()
             self.writer.track(aim.Figure(fig), name="Data Transmission")
-        rpc.shutdown()
+        self.impl_release()
         self.writer.close()
         self.logger.info(f"[{self.name}] Terminated")
+
+    def impl_release(self):
+        raise NotImplementedError
+
+    def get_router_name(self):
+        if self.alias is not None:
+            return self.alias
+        return f"{self.__class__.__name__}_{self.ident[:4]}_{self.exp_id[:4]}"

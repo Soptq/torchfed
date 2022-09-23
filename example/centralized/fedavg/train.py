@@ -4,7 +4,7 @@ import random
 import torch
 import torch.optim as optim
 
-from torchfed.routers.router import Router
+from torchfed.routers import TorchDistributedRPCRouter
 from torchfed.modules.module import Module
 from torchfed.modules.compute.trainer import Trainer
 from torchfed.modules.compute.tester import Tester
@@ -21,7 +21,6 @@ import config
 class FedAvgServer(Module):
     def __init__(
             self,
-            name,
             router,
             dataset_manager,
             visualizer=False,
@@ -29,7 +28,6 @@ class FedAvgServer(Module):
         super(
             FedAvgServer,
             self).__init__(
-            name,
             router,
             visualizer=visualizer,
             debug=debug)
@@ -44,11 +42,6 @@ class FedAvgServer(Module):
             WeightedDataDistributing, "distributor", router)
         self.global_tester = self.register_submodule(
             Tester, "global_tester", router, self.model, self.test_loader)
-
-        router.connect(
-            self, [
-                f"client_{_rank}" for _rank in range(
-                    config.num_users)])
 
         self.distributor.update(self.model.state_dict())
 
@@ -71,7 +64,6 @@ class FedAvgServer(Module):
 class FedAvgClient(Module):
     def __init__(
             self,
-            name,
             router,
             rank,
             dataset_manager,
@@ -80,7 +72,6 @@ class FedAvgClient(Module):
         super(
             FedAvgClient,
             self).__init__(
-            name,
             router,
             visualizer=visualizer,
             debug=debug)
@@ -110,8 +101,6 @@ class FedAvgClient(Module):
             self.loss_fn)
         self.tester = self.register_submodule(
             Tester, "tester", router, self.model, self.test_loader)
-
-        router.connect(self, ["server"])
 
     def set_hparams(self):
         return {
@@ -145,7 +134,7 @@ if __name__ == '__main__':
     # init
     os.environ["MASTER_ADDR"] = "localhost"
     os.environ["MASTER_PORT"] = "5678"
-    router = Router(0, 1, visualizer=True)
+    router = TorchDistributedRPCRouter(0, 1, visualizer=True)
 
     transform = transforms.Compose([
         transforms.ToTensor(),
@@ -160,16 +149,19 @@ if __name__ == '__main__':
                                          transform=transform)
                                      )
 
-    server = FedAvgServer("server", router, dataset_manager, visualizer=True)
+    server = FedAvgServer(router, dataset_manager, visualizer=True)
     clients = []
     for rank in range(config.num_users):
         clients.append(
             FedAvgClient(
-                f"client_{rank}",
                 router,
                 rank,
                 dataset_manager,
                 visualizer=True))
+
+    router.connect(server, [client.get_node_name() for client in clients])
+    for client in clients:
+        router.connect(client, [server.get_node_name()])
 
     # train
     for epoch in range(config.num_epochs):

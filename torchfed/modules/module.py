@@ -1,4 +1,5 @@
 import aim
+import time
 
 from torchfed.routers.router_msg import RouterMsg, RouterMsgResponse
 from typing import TypeVar, Type
@@ -7,23 +8,27 @@ from torchfed.types.meta import PostInitCaller
 
 from prettytable import PrettyTable
 
+from torchfed.utils.hash import hex_hash
+
 T = TypeVar('T')
 
 
 class Module(metaclass=PostInitCaller):
     def __init__(
             self,
-            name,
             router,
+            alias=None,
             visualizer=False,
             writer=None,
             override_hparams=None,
             debug=False):
-        self.name = name
-        self.debug = debug
+        self.ident = hex_hash(f"{time.time_ns()}")
         self.router = router
-        self.logger = get_logger(router.ident, self.get_root_name())
+        self.alias = alias
+        self.name = self.get_node_name()
+        self.logger = get_logger(router.exp_id, self.get_root_name())
         self.override_hparams = override_hparams
+        self.debug = debug
         self.hparams = None
 
         self.visualizer = visualizer
@@ -37,7 +42,8 @@ class Module(metaclass=PostInitCaller):
         self.data_sent, self.data_received = 0, 0
 
         self.routing_table = {}
-        router.register(self)
+        if self.is_root():
+            router.register(self)
 
         if self.is_root():
             self.hparams = self.set_hparams()
@@ -74,9 +80,9 @@ class Module(metaclass=PostInitCaller):
             self.logger.error("Cannot register modules with the same name")
             raise Exception("Cannot register modules with the same name")
         module_obj = module(
-            submodule_name,
             router,
             *args,
+            alias=submodule_name,
             visualizer=self.visualizer,
             writer=self.writer,
             debug=self.debug)
@@ -149,10 +155,22 @@ class Module(metaclass=PostInitCaller):
                 return entrance(*args)
         return None
 
+    def release(self):
+        for module in self.routing_table.values():
+            module.release()
+        if self.visualizer:
+            self.writer.close()
+        self.logger.info(f"[{self.name}] Terminated")
+
+    def get_node_name(self):
+        if self.alias is not None:
+            return self.alias
+        return f"{self.__class__.__name__}_{self.ident[:4]}_{self.router.exp_id[:4]}"
+
     def get_visualizer(self):
         return aim.Run(
-            run_hash=f"{self.get_root_name()}-{self.router.ident[:4]}",
-            experiment=self.router.ident
+            run_hash=self.get_node_name(),
+            experiment=self.router.exp_id
         )
 
     def is_root(self):
@@ -163,10 +181,3 @@ class Module(metaclass=PostInitCaller):
 
     def get_path(self):
         return "/".join(self.name.split("/")[1:])
-
-    def release(self):
-        for module in self.routing_table.values():
-            module.release()
-        if self.visualizer:
-            self.writer.close()
-        self.logger.info(f"[{self.name}] Terminated")

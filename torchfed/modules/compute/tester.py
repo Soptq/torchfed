@@ -7,18 +7,18 @@ from torchfed.third_party.aim_extension.distribution import Distribution
 class Tester(Module):
     def __init__(
             self,
-            name,
             router,
             model,
             dataloader,
+            alias=None,
             visualizer=False,
             writer=None,
             debug=False):
         super(
             Tester,
             self).__init__(
-            name,
             router,
+            alias=alias,
             visualizer=visualizer,
             writer=writer,
             debug=debug)

@@ -8,20 +8,20 @@ from torchfed.third_party.aim_extension.distribution import Distribution
 class Trainer(Module):
     def __init__(
             self,
-            name,
             router,
             model,
             dataloader,
             optimizer,
             loss_fn,
+            alias=None,
             visualizer=False,
             writer=None,
             debug=False):
         super(
             Trainer,
             self).__init__(
-            name,
             router,
+            alias=alias,
             visualizer=visualizer,
             writer=writer,
             debug=debug)
