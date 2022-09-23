@@ -1,5 +1,5 @@
 import os
-from torchfed.routers import Router
+from torchfed.routers import TorchDistributedRPCRouter
 from torchfed.modules.module import Module
 from torchfed.modules.distribute.data_distribute import DataDistributing
 from torchfed.utils.decorator import exposed
@@ -8,8 +8,8 @@ DEBUG = True
 
 
 class Server(Module):
-    def __init__(self, name, router, debug=False):
-        super(Server, self).__init__(name, router, debug)
+    def __init__(self, router, debug=False):
+        super(Server, self).__init__(router, debug=debug)
         self.distributor = self.register_submodule(
             DataDistributing, "distributor", router)
 
@@ -27,24 +27,24 @@ class Client(Module):
 def test_data_distributing():
     os.environ["MASTER_ADDR"] = "localhost"
     os.environ["MASTER_PORT"] = "5678"
-    router_a = Router(0, 1, debug=DEBUG)
+    router_a = TorchDistributedRPCRouter(0, 1, debug=DEBUG)
 
-    server = Server("server", router_a, debug=DEBUG)
+    server = Server(router_a, debug=DEBUG)
     clients = []
 
     for i in range(5):
-        clients.append(Client(f"client_{i}", router_a, debug=DEBUG))
+        clients.append(Client(router_a, debug=DEBUG))
 
     for index, client in enumerate(clients):
-        client.send("server", server.distributor.upload, (client.name, index))
+        client.send(server.get_node_name(), server.distributor.upload, (client.name, index))
 
-    aggregation = server.manual_call(
+    aggregation = server.entry(
         server.distributor.aggregate, (), check_exposed=False)
     assert aggregation == 2.0
-    server.manual_call(server.distributor.update,
+    server.entry(server.distributor.update,
                        (aggregation,), check_exposed=False)
 
-    resp = clients[0].send("server", server.distributor.download, ())[0]
-    assert resp.from_ == "server"
-    assert resp.to == "client_0"
+    resp = clients[0].send(server.get_node_name(), server.distributor.download, ())[0]
+    assert resp.from_ == server.get_node_name()
+    assert resp.to == clients[0].get_node_name()
     assert resp.data == 2.0

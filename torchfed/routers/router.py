@@ -9,7 +9,16 @@ from torchfed.utils.hash import hex_hash
 from torchfed.utils.helper import NetworkConnectionsPlotter, DataTransmitted
 
 
-class Router:
+class Singleton(type):
+    _instances = {}
+
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
+        return cls._instances[cls]
+
+
+class Router(metaclass=Singleton):
     context = None
 
     def __init__(

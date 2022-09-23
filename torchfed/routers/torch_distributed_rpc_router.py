@@ -17,7 +17,7 @@ class TorchDistributedRPCRouter(Router):
             alias=None,
             visualizer=False,
             debug=False):
-        super().__init__(alias, visualizer, debug)
+        super().__init__(alias=alias, visualizer=visualizer, debug=debug)
         self.rank = rank
         self.world_size = world_size
         if backend is None:

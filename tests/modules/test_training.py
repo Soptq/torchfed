@@ -2,7 +2,7 @@ import os
 import torch
 import torch.optim as optim
 
-from torchfed.routers import Router
+from torchfed.routers import TorchDistributedRPCRouter
 from torchfed.modules.module import Module
 from torchfed.modules.compute.trainer import Trainer
 from torchfed.modules.compute.tester import Tester
@@ -16,8 +16,8 @@ DEBUG = True
 
 
 class MainModule(Module):
-    def __init__(self, name, router, debug=False):
-        super(MainModule, self).__init__(name, router, debug)
+    def __init__(self, router, debug=False):
+        super(MainModule, self).__init__(router, debug=debug)
         self.model = CIFARNet()
         transform = transforms.Compose([
             transforms.ToTensor(),
@@ -48,18 +48,17 @@ class MainModule(Module):
         self.tester = self.register_submodule(
             Tester, "tester", router, self.model, self.test_loader)
 
-    @exposed
-    def execute(self):
-        self.tester()
+    def run(self):
+        self.tester.test()
         for i in range(5):
-            self.trainer()
-        self.tester()
+            self.trainer.train()
+        self.tester.test()
 
 
 def test_training():
     os.environ["MASTER_ADDR"] = "localhost"
     os.environ["MASTER_PORT"] = "5678"
-    router_a = Router(0, 1, debug=DEBUG)
+    router_a = TorchDistributedRPCRouter(0, 1, debug=DEBUG)
 
-    main = MainModule("main", router_a, debug=DEBUG)
-    main()
+    main = MainModule(router_a, debug=DEBUG)
+    main.run()
