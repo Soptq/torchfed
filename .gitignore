@@ -6,3 +6,5 @@ venv
 .pytest_cache
 logs
 .aim
+
+example/data

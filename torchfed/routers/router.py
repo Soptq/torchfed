@@ -24,15 +24,13 @@ class Router(metaclass=Singleton):
     def __init__(
             self,
             alias=None,
-            visualizer=False,
-            debug=False):
+            visualizer=False):
         Router.context = self
         self.ident = hex_hash(f"{time.time_ns()}")
         self.exp_id = hex_hash(f"{time.time_ns()}")
         self.alias = alias
         self.name = self.get_router_name()
         self.visualizer = visualizer
-        self.debug = debug
         self.logger = get_logger(self.exp_id, self.name)
 
         if self.visualizer:
@@ -93,9 +91,8 @@ class Router(metaclass=Singleton):
         return self.peers_table[name]
 
     def broadcast(self, router_msg: RouterMsg) -> List[RouterMsgResponse]:
-        if self.debug:
-            self.logger.debug(
-                f"[{self.name}] broadcasting message {router_msg}")
+        self.logger.debug(
+            f"[{self.name}] broadcasting message {router_msg}")
 
         self.data_transmitted.add(
             self.get_root_name(router_msg.from_),
@@ -109,9 +106,8 @@ class Router(metaclass=Singleton):
 
     @staticmethod
     def receive(router_msg: RouterMsg):
-        if Router.context.debug:
-            print(
-                f"[{Router.context.name}] receiving message {router_msg}")
+        Router.context.logger.debug(
+            f"[{Router.context.name}] receiving message {router_msg}")
 
         Router.context.data_transmitted.add(
             Router.get_root_name(router_msg.from_),

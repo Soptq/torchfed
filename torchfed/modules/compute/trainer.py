@@ -15,16 +15,14 @@ class Trainer(Module):
             loss_fn,
             alias=None,
             visualizer=False,
-            writer=None,
-            debug=False):
+            writer=None):
         super(
             Trainer,
             self).__init__(
             router,
             alias=alias,
             visualizer=visualizer,
-            writer=writer,
-            debug=debug)
+            writer=writer)
         self.model = model
         self.dataloader = dataloader
         self.optimizer = optimizer

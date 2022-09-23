@@ -12,12 +12,10 @@ from torchvision.transforms import transforms
 from torchfed.datasets.CIFAR10 import CIFAR10
 from torchfed.models.CIFARNet import CIFARNet
 
-DEBUG = True
-
 
 class MainModule(Module):
-    def __init__(self, router, debug=False):
-        super(MainModule, self).__init__(router, debug=debug)
+    def __init__(self, router):
+        super(MainModule, self).__init__(router)
         self.model = CIFARNet()
         transform = transforms.Compose([
             transforms.ToTensor(),
@@ -58,7 +56,7 @@ class MainModule(Module):
 def test_training():
     os.environ["MASTER_ADDR"] = "localhost"
     os.environ["MASTER_PORT"] = "5678"
-    router_a = TorchDistributedRPCRouter(0, 1, debug=DEBUG)
+    router_a = TorchDistributedRPCRouter(0, 1)
 
-    main = MainModule(router_a, debug=DEBUG)
+    main = MainModule(router_a)
     main.run()

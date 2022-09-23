@@ -4,12 +4,10 @@ from torchfed.modules.module import Module
 from torchfed.modules.distribute.data_distribute import DataDistributing
 from torchfed.utils.decorator import exposed
 
-DEBUG = True
-
 
 class Server(Module):
-    def __init__(self, router, debug=False):
-        super(Server, self).__init__(router, debug=debug)
+    def __init__(self, router):
+        super(Server, self).__init__(router)
         self.distributor = self.register_submodule(
             DataDistributing, "distributor", router)
 
@@ -27,13 +25,13 @@ class Client(Module):
 def test_data_distributing():
     os.environ["MASTER_ADDR"] = "localhost"
     os.environ["MASTER_PORT"] = "5678"
-    router_a = TorchDistributedRPCRouter(0, 1, debug=DEBUG)
+    router_a = TorchDistributedRPCRouter(0, 1)
 
-    server = Server(router_a, debug=DEBUG)
+    server = Server(router_a)
     clients = []
 
     for i in range(5):
-        clients.append(Client(router_a, debug=DEBUG))
+        clients.append(Client(router_a))
 
     for index, client in enumerate(clients):
         client.send(server.get_node_name(), server.distributor.upload, (client.name, index))

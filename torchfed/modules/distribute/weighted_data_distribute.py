@@ -10,16 +10,14 @@ class WeightedDataDistributing(Module):
             router,
             alias=None,
             visualizer=False,
-            writer=None,
-            debug=False):
+            writer=None):
         super(
             WeightedDataDistributing,
             self).__init__(
             router,
             alias=alias,
             visualizer=visualizer,
-            writer=writer,
-            debug=debug)
+            writer=writer)
         self.total_weight = 0
         self.storage = {}
         self.shared = None

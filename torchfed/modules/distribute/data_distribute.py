@@ -10,16 +10,14 @@ class DataDistributing(Module):
             router,
             alias=None,
             visualizer=False,
-            writer=None,
-            debug=False):
+            writer=None):
         super(
             DataDistributing,
             self).__init__(
             router,
             alias=alias,
             visualizer=visualizer,
-            writer=writer,
-            debug=debug)
+            writer=writer)
         self.storage = {}
         self.shared = None
 

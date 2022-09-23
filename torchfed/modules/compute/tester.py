@@ -12,16 +12,14 @@ class Tester(Module):
             dataloader,
             alias=None,
             visualizer=False,
-            writer=None,
-            debug=False):
+            writer=None):
         super(
             Tester,
             self).__init__(
             router,
             alias=alias,
             visualizer=visualizer,
-            writer=writer,
-            debug=debug)
+            writer=writer)
         self.model = model
         self.dataloader = dataloader
         self.metrics = None

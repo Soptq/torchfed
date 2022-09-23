@@ -21,15 +21,13 @@ class Module(metaclass=PostInitCaller):
             alias=None,
             visualizer=False,
             writer=None,
-            override_hparams=None,
-            debug=False):
+            override_hparams=None):
         self.ident = hex_hash(f"{time.time_ns()}")
         self.router = router
         self.alias = alias
         self.name = self.get_node_name()
         self.logger = get_logger(router.exp_id, self.get_root_name())
         self.override_hparams = override_hparams
-        self.debug = debug
         self.hparams = None
 
         self.visualizer = visualizer
@@ -56,7 +54,6 @@ class Module(metaclass=PostInitCaller):
 
             self.hparams["name"] = self.name
             self.hparams["visualizer"] = self.visualizer
-            self.hparams["debug"] = self.debug
             hp_table = PrettyTable()
             hp_table.field_names = self.hparams.keys()
             hp_table.add_row(self.hparams.values())
@@ -85,8 +82,7 @@ class Module(metaclass=PostInitCaller):
             *args,
             alias=submodule_name,
             visualizer=self.visualizer,
-            writer=self.writer,
-            debug=self.debug)
+            writer=self.writer)
         self.routing_table[name] = module_obj
         return module_obj
 
@@ -107,12 +103,10 @@ class Module(metaclass=PostInitCaller):
         return responses
 
     def receive(self, router_msg: RouterMsg) -> RouterMsgResponse:
-        if self.debug:
-            self.logger.debug(
-                f"Module {self.name} receiving data {router_msg}")
-        if self.debug:
-            self.logger.debug(
-                f"Module {self.name} is calling path {router_msg.path} with args {router_msg.args}")
+        self.logger.debug(
+            f"Module {self.name} receiving data {router_msg}")
+        self.logger.debug(
+            f"Module {self.name} is calling path {router_msg.path} with args {router_msg.args}")
 
         self.data_received += router_msg.size
         if self.visualizer:
@@ -132,8 +126,7 @@ class Module(metaclass=PostInitCaller):
         if ret.data is None:
             self.logger.warning(
                 f"Module {self.name} does not have path {router_msg.path}")
-        if self.debug:
-            self.logger.debug(f"Module {self.name} responses with data {ret}")
+        self.logger.debug(f"Module {self.name} responses with data {ret}")
         return ret
 
     def entry(self, path, args, check_exposed=True):

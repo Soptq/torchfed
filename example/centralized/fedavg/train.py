@@ -23,14 +23,12 @@ class FedAvgServer(Module):
             self,
             router,
             dataset_manager,
-            visualizer=False,
-            debug=False):
+            visualizer=False):
         super(
             FedAvgServer,
             self).__init__(
             router,
-            visualizer=visualizer,
-            debug=debug)
+            visualizer=visualizer)
         self.model = CIFARNet()
 
         self.dataset_manager = dataset_manager
@@ -67,14 +65,12 @@ class FedAvgClient(Module):
             router,
             rank,
             dataset_manager,
-            visualizer=False,
-            debug=False):
+            visualizer=False):
         super(
             FedAvgClient,
             self).__init__(
             router,
-            visualizer=visualizer,
-            debug=debug)
+            visualizer=visualizer)
         self.model = CIFARNet()
 
         self.dataset_manager = dataset_manager

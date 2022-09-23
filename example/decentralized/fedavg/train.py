@@ -24,14 +24,12 @@ class FedAvgNode(Module):
             router,
             rank,
             dataset_manager,
-            visualizer=False,
-            debug=False):
+            visualizer=False):
         super(
             FedAvgNode,
             self).__init__(
             router,
-            visualizer=visualizer,
-            debug=debug)
+            visualizer=visualizer)
         self.model = CIFARNet()
 
         self.dataset_manager = dataset_manager
