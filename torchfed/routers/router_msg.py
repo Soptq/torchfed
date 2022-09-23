@@ -1,3 +1,4 @@
+import json
 from torchfed.utils.object import get_object_size
 
 
@@ -10,6 +11,21 @@ class RouterMsg(object):
 
     def __str__(self):
         return f"<RouterMsg from={self.from_} to={self.to} path={self.path} args={self.args}>"
+
+    def serialize(self):
+        return json.dumps({
+            "from": self.from_,
+            "to": self.to,
+            "path": self.path,
+            "args": self.args
+        })
+
+    @staticmethod
+    def deserialize(data) -> "RouterMsg":
+        if type(data) == str:
+            data = json.loads(data)
+
+        return RouterMsg(from_=data["from"], to=data["to"], path=data["path"], args=data["args"])
 
     @property
     def size(self):
@@ -37,3 +53,17 @@ class RouterMsgResponse(object):
         size += get_object_size(self.to)
         size += get_object_size(self.data)
         return size
+
+    def serialize(self):
+        return json.dumps({
+            "from": self.from_,
+            "to": self.to,
+            "data": self.data
+        })
+
+    @staticmethod
+    def deserialize(data) -> "RouterMsgResponse":
+        if type(data) == str:
+            data = json.loads(data)
+
+        return RouterMsgResponse(from_=data["from"], to=data["to"], data=data["data"])

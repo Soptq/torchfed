@@ -12,10 +12,17 @@ from torchfed.utils.helper import NetworkConnectionsPlotter, DataTransmitted
 class Singleton(type):
     _instances = {}
 
-    def __call__(cls, *args, **kwargs):
-        if cls not in cls._instances:
-            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
-        return cls._instances[cls]
+    def __call__(cls, *args, mode="singleton", ident=None, **kwargs):
+        if mode == "singleton":
+            if cls not in cls._instances:
+                cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
+            return cls._instances[cls]
+        elif mode == "simulate":
+            if ident is None:
+                raise ValueError("ident must be provided when mode is simulate")
+            if ident not in cls._instances:
+                cls._instances[ident] = super(Singleton, cls).__call__(*args, **kwargs)
+            return cls._instances[ident]
 
 
 class Router(metaclass=Singleton):
@@ -141,14 +148,14 @@ class Router(metaclass=Singleton):
             f"[{self.name}] Experiment ID refreshed: {self.exp_id}")
 
     def release(self):
+        self.impl_release()
         self.logger.info(f"[{self.name}] Data transmission matrix:")
         for row in self.data_transmitted.get_transmission_matrix_str().split("\n"):
             self.logger.info(row)
         if self.visualizer:
             fig = self.data_transmitted.get_figure()
             self.writer.track(aim.Figure(fig), name="Data Transmission")
-        self.impl_release()
-        self.writer.close()
+            self.writer.close()
         self.logger.info(f"[{self.name}] Terminated")
 
     def impl_release(self):
