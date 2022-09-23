@@ -1,5 +1,6 @@
 import aim
 import time
+import types
 
 from torchfed.routers.router_msg import RouterMsg, RouterMsgResponse
 from typing import TypeVar, Type
@@ -120,7 +121,7 @@ class Module(metaclass=PostInitCaller):
         ret = RouterMsgResponse(
             from_=self.name,
             to=router_msg.from_,
-            data=self.manual_call(
+            data=self.entry(
                 router_msg.path,
                 router_msg.args))
 
@@ -135,15 +136,15 @@ class Module(metaclass=PostInitCaller):
             self.logger.debug(f"Module {self.name} responses with data {ret}")
         return ret
 
-    def manual_call(self, path, args, check_exposed=True):
-        if callable(path):
+    def entry(self, path, args, check_exposed=True):
+        if isinstance(path, types.MethodType) and isinstance(path.__self__, Module):
             path = f"{'/'.join(path.__self__.name.split('/')[1:])}/{path.__name__}"
 
         paths = path.split("/")
         target = paths.pop(0)
 
         if target in self.routing_table:
-            return self.routing_table[target].manual_call(
+            return self.routing_table[target].entry(
                 "/".join(paths), args, check_exposed=check_exposed)
         elif hasattr(self, target):
             entrance = getattr(self, target)
