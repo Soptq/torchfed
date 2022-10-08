@@ -136,6 +136,7 @@ if __name__ == '__main__':
                                          transform=transform)
                                      )
 
+
     def objective(trial):
         hparams = {
             "lr": trial.suggest_categorical("lr", [1e-1, 1e-2, 1e-3]),
@@ -162,8 +163,8 @@ if __name__ == '__main__':
         for node in nodes:
             current_node_name = node.get_node_name()
             other_nodes_names = [n.get_node_name() for n in nodes if n.get_node_name() != current_node_name]
-            connected_peers = random.sample(other_nodes_names, 5)
-            print(f"node {node.get_node_name()} will connect to {connected_peers}")
+            connected_peers = random.sample(other_nodes_names, 5) + [current_node_name]  # self connect
+            print(f"node {current_node_name} will connect to {connected_peers}")
             router.connect(node, connected_peers)
 
         # train
@@ -183,6 +184,7 @@ if __name__ == '__main__':
             node.release()
 
         return metrics
+
 
     study = optuna.create_study(direction="maximize")
     study.optimize(objective, n_trials=5)
