@@ -143,14 +143,16 @@ if __name__ == '__main__':
                                      )
 
     node = FedAvgNode(router, args.rank, dataset_manager, visualizer=True)
+    current_node_name = node.get_node_name()
 
     # bootstrap
-    router.connect(node, ["node_0"])
-    node.bootstrap("node_0")
-    router.disconnect(node, ["node_0"])
+    bootstrap_from = "node_0"
+    if current_node_name != bootstrap_from:
+        router.connect(node, ["node_0"])
+        node.bootstrap("node_0")
+        router.disconnect(node, ["node_0"])
 
     # connect
-    current_node_name = "node_{}".format(args.rank)
     other_nodes_name = ["node_{}".format(i) for i in range(args.world_size) if i != args.rank]
     connected_peers = random.sample(other_nodes_name, min(5, len(other_nodes_name))) + [current_node_name]
     print(f"node {current_node_name} will connect to {connected_peers}")

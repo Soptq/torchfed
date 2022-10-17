@@ -136,18 +136,24 @@ class Module(metaclass=PostInitCaller):
         paths = path.split("/")
         target = paths.pop(0)
 
-        if target in self.routing_table:
-            return self.routing_table[target].entry(
-                "/".join(paths), args, check_exposed=check_exposed)
-        elif hasattr(self, target):
-            entrance = getattr(self, target)
-            if callable(entrance) and (
-                    not check_exposed or (
-                    hasattr(
-                        entrance,
-                        "exposed") and entrance.exposed)):
-                return entrance(*args)
-        return None
+        # infinite loop until there is some return value
+        while True:
+            try:
+                if target in self.routing_table:
+                    return self.routing_table[target].entry(
+                        "/".join(paths), args, check_exposed=check_exposed)
+                elif hasattr(self, target):
+                    entrance = getattr(self, target)
+                    if callable(entrance) and (
+                            not check_exposed or (
+                            hasattr(
+                                entrance,
+                                "exposed") and entrance.exposed)):
+                        return entrance(*args)
+            except Exception as e:
+                self.logger.error(f"Error in {self.name} when calling {path} with args {args}: {e}")
+                self.logger.error(f"Will try again in 1 second")
+                time.sleep(1)
 
     def release(self):
         for module in self.routing_table.values():
