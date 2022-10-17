@@ -1,3 +1,4 @@
+import os
 from typing import List
 
 import torch
@@ -21,6 +22,13 @@ class TorchDistributedRPCRouter(Router):
         self.world_size = world_size
         if backend is None:
             backend = rpc.BackendType.TENSORPIPE
+
+        # set interface, check: https://discuss.pytorch.org/t/connect-127-0-1-1-a-port-connection-refused/100802
+        if "GLOO_SOCKET_IFNAME" not in os.environ:
+            os.environ["GLOO_SOCKET_IFNAME"] = "eth0"
+
+        if "TCP_SOCKET_IFNAME" not in os.environ:
+            os.environ["TCP_SOCKET_IFNAME"] = "eth0"
 
         if rpc_backend_options is None:
             rpc_backend_options = rpc.TensorPipeRpcBackendOptions(

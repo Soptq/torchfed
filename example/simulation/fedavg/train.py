@@ -118,12 +118,15 @@ if __name__ == '__main__':
     parser.add_argument('--rank', type=int, help='the rank of the node')
     parser.add_argument('--master_addr', type=str, help='the address of the master node')
     parser.add_argument('--master_port', type=str, help='the port of the master node')
+    parser.add_argument('--interface', type=str, default='eth0', help='the interface of the network (e.g. eth0)')
 
     args = parser.parse_args()
-    
+    print(args)
     # init
     os.environ["MASTER_ADDR"] = args.master_addr
     os.environ["MASTER_PORT"] = args.master_port
+    os.environ["GLOO_SOCKET_IFNAME"] = args.interface
+    os.environ["TP_SOCKET_IFNAME"] = args.interface
     router = TorchDistributedRPCRouter(args.rank, args.world_size, visualizer=True)
 
     transform = transforms.Compose([
@@ -149,7 +152,7 @@ if __name__ == '__main__':
     # connect
     current_node_name = "node_{}".format(args.rank)
     other_nodes_name = ["node_{}".format(i) for i in range(args.world_size) if i != args.rank]
-    connected_peers = random.sample(other_nodes_name, 5) + [current_node_name]
+    connected_peers = random.sample(other_nodes_name, min(5, len(other_nodes_name))) + [current_node_name]
     print(f"node {current_node_name} will connect to {connected_peers}")
     router.connect(node, connected_peers)
 
