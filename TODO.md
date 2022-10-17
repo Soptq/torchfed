@@ -20,3 +20,4 @@
 - [ ] Clearer experiment ID (Currently it is a hash, which is not easy to understand for human)
 - [ ] Improve `get_object_size` function
 - [ ] Type annotations
+- [ ] LEAF Benchmark integration
