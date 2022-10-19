@@ -140,8 +140,8 @@ if __name__ == '__main__':
     args = parser.parse_args()
     print(args)
     # init
-    os.environ["MASTER_ADDR"] = "localhost"
-    os.environ["MASTER_PORT"] = "5678"
+    os.environ["MASTER_ADDR"] = args.master_addr
+    os.environ["MASTER_PORT"] = args.master_port
     os.environ["GLOO_SOCKET_IFNAME"] = args.interface
     os.environ["TP_SOCKET_IFNAME"] = args.interface
     router = TorchDistributedRPCRouter(args.rank, args.world_size, visualizer=True)
