@@ -184,7 +184,7 @@ if __name__ == '__main__':
 
     if args.rank == 0:
         node = FedAvgServer(router, dataset_manager, visualizer=True)
-        router.connect(node, [f"client-{i}" for i in range(1, args.world_size - 1)])
+        router.connect(node, [f"client-{i}" for i in range(0, args.world_size - 1)])
     else:
         node = FedAvgClient(router, args.rank - 1, dataset_manager, visualizer=True)
         router.connect(node, ["server"])
