@@ -23,13 +23,6 @@ class TorchDistributedRPCRouter(Router):
         if backend is None:
             backend = rpc.BackendType.TENSORPIPE
 
-        # set interface, check: https://discuss.pytorch.org/t/connect-127-0-1-1-a-port-connection-refused/100802
-        if "GLOO_SOCKET_IFNAME" not in os.environ:
-            os.environ["GLOO_SOCKET_IFNAME"] = "eth0"
-
-        if "TCP_SOCKET_IFNAME" not in os.environ:
-            os.environ["TCP_SOCKET_IFNAME"] = "eth0"
-
         if rpc_backend_options is None:
             rpc_backend_options = rpc.TensorPipeRpcBackendOptions(
                 init_method="env://",
@@ -38,7 +31,7 @@ class TorchDistributedRPCRouter(Router):
         torch.distributed.rpc.init_rpc(
             self.name, backend, rank, world_size, rpc_backend_options)
 
-    def impl_broadcast(self, router_msg: RouterMsg) -> List[RouterMsgResponse]:
+    def impl_broadcast(self, router_msg: List[RouterMsg]) -> List[RouterMsgResponse]:
         futs, rets = [], []
         for rank in range(self.world_size):
             futs.append(
@@ -49,9 +42,7 @@ class TorchDistributedRPCRouter(Router):
                         router_msg,
                     )))
         for fut in futs:
-            resp = fut.wait()
-            if resp is not None:
-                rets.append(resp)
+            rets.extend(fut.wait())
 
         for ret in rets:
             self.data_transmitted.add(

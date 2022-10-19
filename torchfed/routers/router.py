@@ -97,40 +97,43 @@ class Router(metaclass=Singleton):
         name = module.get_root_name()
         return self.peers_table[name]
 
-    def broadcast(self, router_msg: RouterMsg) -> List[RouterMsgResponse]:
-        self.logger.debug(
-            f"[{self.name}] broadcasting message {router_msg}")
+    def broadcast(self, router_msg: List[RouterMsg]) -> List[RouterMsgResponse]:
+        for msg in router_msg:
+            self.logger.debug(
+                f"[{self.name}] broadcasting message {msg}")
 
-        self.data_transmitted.add(
-            self.get_root_name(router_msg.from_),
-            self.get_root_name(router_msg.to),
-            router_msg.size
-        )
+            self.data_transmitted.add(
+                self.get_root_name(msg.from_),
+                self.get_root_name(msg.to),
+                msg.size
+            )
         return self.impl_broadcast(router_msg)
 
-    def impl_broadcast(self, router_msg: RouterMsg) -> List[RouterMsgResponse]:
+    def impl_broadcast(self, router_msg: List[RouterMsg]) -> List[RouterMsgResponse]:
         raise NotImplementedError
 
     @staticmethod
-    def receive(router_msg: RouterMsg):
-        Router.context.logger.debug(
-            f"[{Router.context.name}] receiving message {router_msg}")
+    def receive(router_msg: List[RouterMsg]):
+        responses = []
+        for msg in router_msg:
+            Router.context.logger.debug(
+                f"[{Router.context.name}] receiving message {msg}")
 
-        Router.context.data_transmitted.add(
-            Router.get_root_name(router_msg.from_),
-            Router.get_root_name(router_msg.to),
-            router_msg.size
-        )
-
-        if router_msg.to in Router.context.owned_nodes.keys():
-            resp_msg = Router.context.owned_nodes[router_msg.to](router_msg)
             Router.context.data_transmitted.add(
-                Router.get_root_name(resp_msg.from_),
-                Router.get_root_name(resp_msg.to),
-                resp_msg.size
+                Router.get_root_name(msg.from_),
+                Router.get_root_name(msg.to),
+                msg.size
             )
-            return resp_msg
-        return None
+
+            if msg.to in Router.context.owned_nodes.keys():
+                resp_msg = Router.context.owned_nodes[msg.to](msg)
+                Router.context.data_transmitted.add(
+                    Router.get_root_name(resp_msg.from_),
+                    Router.get_root_name(resp_msg.to),
+                    resp_msg.size
+                )
+                responses.append(resp_msg)
+        return responses
 
     @staticmethod
     def get_root_name(name):

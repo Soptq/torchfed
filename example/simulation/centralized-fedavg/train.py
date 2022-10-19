@@ -18,6 +18,8 @@ from torchfed.managers.dataset_manager import DatasetManager
 import config
 import argparse
 
+from torchfed.utils.decorator import exposed
+
 
 class FedAvgServer(Module):
     def __init__(
@@ -60,6 +62,13 @@ class FedAvgServer(Module):
             self.model.load_state_dict(aggregated)
         self.distributor.update(aggregated)
 
+        self.send(router.get_peers(self), "run", ())
+
+    def shutdown(self):
+        self.send(router.get_peers(self), "shutdown", ())
+        self.release()
+        self.router.release()
+
 
 class FedAvgClient(Module):
     def __init__(
@@ -101,6 +110,7 @@ class FedAvgClient(Module):
         self.tester = self.register_submodule(
             Tester, "tester", router, self.model, self.test_loader)
 
+
     def set_hparams(self):
         return {
             "lr": config.lr,
@@ -110,6 +120,7 @@ class FedAvgClient(Module):
             "local_iterations": config.local_iterations,
         }
 
+    @exposed
     def run(self):
         global_model = self.send(
             router.get_peers(self)[0],
@@ -127,6 +138,13 @@ class FedAvgClient(Module):
             (self.name,
              self.dataset_size,
              self.model.state_dict()))
+
+        return True
+
+    @exposed
+    def shutdown(self):
+        self.release()
+        self.router.release()
 
 
 if __name__ == '__main__':
@@ -167,9 +185,9 @@ if __name__ == '__main__':
         router.connect(node, ["server"])
 
     # train
-    for epoch in range(config.num_epochs):
-        print(f"---------- Epoch {epoch} ----------")
-        node.run()
+    if args.rank == 0:
+        for epoch in range(config.num_epochs):
+            print(f"---------- Epoch {epoch} ----------")
+            node.run()
 
-    node.release()
-    router.release()
+        node.shutdown()
