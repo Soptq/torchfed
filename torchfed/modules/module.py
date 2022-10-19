@@ -112,12 +112,21 @@ class Module(metaclass=PostInitCaller):
         if self.visualizer:
             self.writer.track(self.data_received, name="Data Received (bytes)")
 
-        ret = RouterMsgResponse(
-            from_=self.name,
-            to=router_msg.from_,
-            data=self.entry(
-                router_msg.path,
-                router_msg.args))
+        # infinite loop until there is some return value
+        while True:
+            try:
+                ret = RouterMsgResponse(
+                    from_=self.name,
+                    to=router_msg.from_,
+                    data=self.entry(
+                        router_msg.path,
+                        router_msg.args))
+                break
+            except Exception as e:
+                self.logger.warning(f"Error in {self.name} when calling {router_msg.path} from {router_msg.from_} "
+                                    f"with args {router_msg.args}: {e}")
+                self.logger.warning(f"Will try again in 1 second")
+                time.sleep(1)
 
         self.data_sent += ret.size
         if self.visualizer:
@@ -136,24 +145,17 @@ class Module(metaclass=PostInitCaller):
         paths = path.split("/")
         target = paths.pop(0)
 
-        # infinite loop until there is some return value
-        while True:
-            try:
-                if target in self.routing_table:
-                    return self.routing_table[target].entry(
-                        "/".join(paths), args, check_exposed=check_exposed)
-                elif hasattr(self, target):
-                    entrance = getattr(self, target)
-                    if callable(entrance) and (
-                            not check_exposed or (
-                            hasattr(
-                                entrance,
-                                "exposed") and entrance.exposed)):
-                        return entrance(*args)
-            except Exception as e:
-                self.logger.error(f"Error in {self.name} when calling {path} with args {args}: {e}")
-                self.logger.error(f"Will try again in 1 second")
-                time.sleep(1)
+        if target in self.routing_table:
+            return self.routing_table[target].entry(
+                "/".join(paths), args, check_exposed=check_exposed)
+        elif hasattr(self, target):
+            entrance = getattr(self, target)
+            if callable(entrance) and (
+                    not check_exposed or (
+                    hasattr(
+                        entrance,
+                        "exposed") and entrance.exposed)):
+                return entrance(*args)
 
     def release(self):
         for module in self.routing_table.values():
