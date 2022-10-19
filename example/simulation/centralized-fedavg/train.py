@@ -54,14 +54,14 @@ class FedAvgServer(Module):
         }
 
     def run(self):
-        self.global_tester.test()
-
         aggregated = self.distributor.aggregate()
         if aggregated is None:
             aggregated = self.model.state_dict()
         else:
             self.model.load_state_dict(aggregated)
         self.distributor.update(aggregated)
+
+        self.global_tester.test()
 
         self.send(router.get_peers(self), "run", ())
 

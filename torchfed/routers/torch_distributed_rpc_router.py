@@ -42,7 +42,9 @@ class TorchDistributedRPCRouter(Router):
                         router_msg,
                     )))
         for fut in futs:
-            rets.extend(fut.wait())
+            resp = fut.wait()
+            if resp is not None:
+                rets.extend(fut.wait())
 
         for ret in rets:
             self.data_transmitted.add(
