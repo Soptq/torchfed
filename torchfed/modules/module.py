@@ -29,6 +29,7 @@ class Module(metaclass=PostInitCaller):
         self.logger = get_logger(router.exp_id, self.get_root_name())
         self.override_hparams = override_hparams
         self.hparams = None
+        self.released = False
 
         self.visualizer = visualizer
         self.writer = writer
@@ -163,10 +164,13 @@ class Module(metaclass=PostInitCaller):
                 return entrance(*args)
 
     def release(self):
+        if self.released:
+            return
         for module in self.routing_table.values():
             module.release()
         if self.visualizer:
             self.writer.close()
+        self.released = True
         self.logger.info(f"[{self.name}] Terminated")
 
     def get_node_name(self):

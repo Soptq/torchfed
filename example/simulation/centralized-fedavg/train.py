@@ -1,5 +1,6 @@
 import os
 import random
+import time
 
 import torch
 import torch.optim as optim
@@ -120,6 +121,10 @@ class FedAvgClient(Module):
             "local_iterations": config.local_iterations,
         }
 
+    def hangup(self):
+        while not self.released:
+            time.sleep(3)
+
     @exposed
     def run(self):
         global_model = self.send(
@@ -191,3 +196,5 @@ if __name__ == '__main__':
             node.run()
 
         node.shutdown()
+    else:
+        node.hangup()

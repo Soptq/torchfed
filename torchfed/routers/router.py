@@ -39,6 +39,7 @@ class Router(metaclass=Singleton):
         self.name = self.get_router_name()
         self.visualizer = visualizer
         self.logger = get_logger(self.exp_id, self.name)
+        self.released = False
 
         if self.visualizer:
             self.logger.info(
@@ -151,6 +152,8 @@ class Router(metaclass=Singleton):
             f"[{self.name}] Experiment ID refreshed: {self.exp_id}")
 
     def release(self):
+        if self.released:
+            return
         self.impl_release()
         self.logger.info(f"[{self.name}] Data transmission matrix:")
         for row in self.data_transmitted.get_transmission_matrix_str().split("\n"):
@@ -159,6 +162,7 @@ class Router(metaclass=Singleton):
             fig = self.data_transmitted.get_figure()
             self.writer.track(aim.Figure(fig), name="Data Transmission")
             self.writer.close()
+        self.released = True
         self.logger.info(f"[{self.name}] Terminated")
 
     def impl_release(self):
