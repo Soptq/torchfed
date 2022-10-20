@@ -1,0 +1,33 @@
+# pyproject.toml
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "torchfed"
+version = "0.0.1"
+authors = [
+  { name="Soptq", email="squints-marital0h@icloud.com" },
+]
+description = "A unified federated learning framework for PyTorch."
+readme = "README.md"
+requires-python = ">=3.7"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+]
+keywords = ["pytorch", "framework", "distributed", "federated learning"]
+dependencies = [
+    "aim",
+    "torch",
+    "torchvision",
+    "loguru",
+    "networkx",
+    "plotly",
+    "prettytable",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/Soptq/torchfed"
+"Bug Tracker" = "https://github.com/Soptq/torchfed/issues"
