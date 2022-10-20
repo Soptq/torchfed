@@ -12,12 +12,19 @@ class TestSubSubModule(Module):
 
 class TestSubModule(Module):
     def __init__(self,
+                 router,
+                 alias=None,
+                 visualizer=False,
+                 writer=None,
+                 override_hparams=None):
+        super(
+            TestSubModule,
+            self).__init__(
             router,
-            alias=None,
-            visualizer=False,
-            writer=None,
-            override_hparams=None):
-        super(TestSubModule, self).__init__(router, alias=alias, visualizer=visualizer, writer=writer, override_hparams=override_hparams)
+            alias=alias,
+            visualizer=visualizer,
+            writer=writer,
+            override_hparams=override_hparams)
         self.submodule = self.register_submodule(
             TestSubSubModule, "submodule", router)
 
@@ -65,7 +72,10 @@ def test_connectivity_submodule_local():
     alice = TestMainModule(router_a)
     bob = TestMainModule(router_a)
 
-    resp_a = alice.send(to=bob.get_node_name(), path="submodule/execute", args=())[0]
+    resp_a = alice.send(
+        to=bob.get_node_name(),
+        path="submodule/execute",
+        args=())[0]
     assert resp_a.from_ == bob.get_node_name()
     assert resp_a.to == alice.get_node_name()
     assert resp_a.data == "SubModule Executing"

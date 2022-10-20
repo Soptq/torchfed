@@ -21,7 +21,12 @@ class P2PRouter(Router):
         self.port = port
         self.response_buffer = None
         self.timeout = 60 * 100
-        self.p2p_node = P2PNode(host, port, id=self.name, receive_callback=Router.receive, response_callback=P2PRouter.response_callback)
+        self.p2p_node = P2PNode(
+            host,
+            port,
+            id=self.name,
+            receive_callback=Router.receive,
+            response_callback=P2PRouter.response_callback)
         self.p2p_node.start()
         # TODO: Connect to peers
 
@@ -34,7 +39,10 @@ class P2PRouter(Router):
         rets = [Router.receive(router_msg)]
 
         P2PRouter.response_buffer = None
-        self.p2p_node.send_to_nodes(construct_query(P2PQueryType.REGULAR_MSG, router_msg.serialize()))
+        self.p2p_node.send_to_nodes(
+            construct_query(
+                P2PQueryType.REGULAR_MSG,
+                router_msg.serialize()))
 
         timeout_counter = 0
         while True:
@@ -44,7 +52,8 @@ class P2PRouter(Router):
                 rets.append(P2PRouter.response_buffer)
                 break
 
-            # TODO: Wait response. Maybe we will async this process in the future
+            # TODO: Wait response. Maybe we will async this process in the
+            # future
             timeout_counter += 1
             time.sleep(0.01)
 

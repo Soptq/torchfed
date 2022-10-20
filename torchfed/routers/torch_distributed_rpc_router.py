@@ -31,7 +31,9 @@ class TorchDistributedRPCRouter(Router):
         torch.distributed.rpc.init_rpc(
             self.name, backend, rank, world_size, rpc_backend_options)
 
-    def impl_broadcast(self, router_msg: List[RouterMsg]) -> List[RouterMsgResponse]:
+    def impl_broadcast(
+            self,
+            router_msg: List[RouterMsg]) -> List[RouterMsgResponse]:
         futs, rets = [], []
         for rank in range(self.world_size):
             futs.append(

@@ -34,15 +34,22 @@ def test_data_distributing():
         clients.append(Client(router_a))
 
     for index, client in enumerate(clients):
-        client.send(server.get_node_name(), server.distributor.upload, (client.name, index))
+        client.send(
+            server.get_node_name(),
+            server.distributor.upload,
+            (client.name,
+             index))
 
     aggregation = server.entry(
         server.distributor.aggregate, (), check_exposed=False)
     assert aggregation == 2.0
     server.entry(server.distributor.update,
-                       (aggregation,), check_exposed=False)
+                 (aggregation,), check_exposed=False)
 
-    resp = clients[0].send(server.get_node_name(), server.distributor.download, ())[0]
+    resp = clients[0].send(
+        server.get_node_name(),
+        server.distributor.download,
+        ())[0]
     assert resp.from_ == server.get_node_name()
     assert resp.to == clients[0].get_node_name()
     assert resp.data == 2.0

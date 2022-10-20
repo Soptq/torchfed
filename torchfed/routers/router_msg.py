@@ -22,10 +22,14 @@ class RouterMsg(object):
 
     @staticmethod
     def deserialize(data) -> "RouterMsg":
-        if type(data) == str:
+        if isinstance(data, str):
             data = json.loads(data)
 
-        return RouterMsg(from_=data["from"], to=data["to"], path=data["path"], args=data["args"])
+        return RouterMsg(
+            from_=data["from"],
+            to=data["to"],
+            path=data["path"],
+            args=data["args"])
 
     @property
     def size(self):
@@ -63,7 +67,10 @@ class RouterMsgResponse(object):
 
     @staticmethod
     def deserialize(data) -> "RouterMsgResponse":
-        if type(data) == str:
+        if isinstance(data, str):
             data = json.loads(data)
 
-        return RouterMsgResponse(from_=data["from"], to=data["to"], data=data["data"])
+        return RouterMsgResponse(
+            from_=data["from"],
+            to=data["to"],
+            data=data["data"])

@@ -111,7 +111,6 @@ class FedAvgClient(Module):
         self.tester = self.register_submodule(
             Tester, "tester", router, self.model, self.test_loader)
 
-
     def set_hparams(self):
         return {
             "lr": config.lr,
@@ -154,11 +153,24 @@ class FedAvgClient(Module):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Simulation of FedAvg')
-    parser.add_argument('--world_size', type=int, help='number of nodes in the world')
+    parser.add_argument(
+        '--world_size',
+        type=int,
+        help='number of nodes in the world')
     parser.add_argument('--rank', type=int, help='the rank of the node')
-    parser.add_argument('--master_addr', type=str, help='the address of the master node')
-    parser.add_argument('--master_port', type=str, help='the port of the master node')
-    parser.add_argument('--interface', type=str, default='eth0', help='the interface of the network (e.g. eth0)')
+    parser.add_argument(
+        '--master_addr',
+        type=str,
+        help='the address of the master node')
+    parser.add_argument(
+        '--master_port',
+        type=str,
+        help='the port of the master node')
+    parser.add_argument(
+        '--interface',
+        type=str,
+        default='eth0',
+        help='the interface of the network (e.g. eth0)')
 
     args = parser.parse_args()
     print(args)
@@ -167,7 +179,8 @@ if __name__ == '__main__':
     os.environ["MASTER_PORT"] = args.master_port
     os.environ["GLOO_SOCKET_IFNAME"] = args.interface
     os.environ["TP_SOCKET_IFNAME"] = args.interface
-    router = TorchDistributedRPCRouter(args.rank, args.world_size, visualizer=True)
+    router = TorchDistributedRPCRouter(
+        args.rank, args.world_size, visualizer=True)
 
     transform = transforms.Compose([
         transforms.ToTensor(),
@@ -184,9 +197,14 @@ if __name__ == '__main__':
 
     if args.rank == 0:
         node = FedAvgServer(router, dataset_manager, visualizer=True)
-        router.connect(node, [f"client-{i}" for i in range(0, args.world_size - 1)])
+        router.connect(
+            node, [f"client-{i}" for i in range(0, args.world_size - 1)])
     else:
-        node = FedAvgClient(router, args.rank - 1, dataset_manager, visualizer=True)
+        node = FedAvgClient(
+            router,
+            args.rank - 1,
+            dataset_manager,
+            visualizer=True)
         router.connect(node, ["server"])
 
     # train

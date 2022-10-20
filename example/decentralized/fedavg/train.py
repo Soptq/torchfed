@@ -145,8 +145,11 @@ if __name__ == '__main__':
     # connect
     for node in nodes:
         current_node_name = node.get_node_name()
-        other_nodes_names = [n.get_node_name() for n in nodes if n.get_node_name() != current_node_name]
-        connected_peers = random.sample(other_nodes_names, 5) + [current_node_name]  # self connect
+        other_nodes_names = [
+            n.get_node_name() for n in nodes if n.get_node_name() != current_node_name]
+        connected_peers = random.sample(
+            other_nodes_names,
+            5) + [current_node_name]  # self connect
         print(f"node {current_node_name} will connect to {connected_peers}")
         router.connect(node, connected_peers)
 

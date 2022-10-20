@@ -15,13 +15,18 @@ class Singleton(type):
     def __call__(cls, *args, mode="singleton", ident=None, **kwargs):
         if mode == "singleton":
             if cls not in cls._instances:
-                cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
+                cls._instances[cls] = super(
+                    Singleton, cls).__call__(
+                    *args, **kwargs)
             return cls._instances[cls]
         elif mode == "simulate":
             if ident is None:
-                raise ValueError("ident must be provided when mode is simulate")
+                raise ValueError(
+                    "ident must be provided when mode is simulate")
             if ident not in cls._instances:
-                cls._instances[ident] = super(Singleton, cls).__call__(*args, **kwargs)
+                cls._instances[ident] = super(
+                    Singleton, cls).__call__(
+                    *args, **kwargs)
             return cls._instances[ident]
 
 
@@ -52,7 +57,8 @@ class Router(metaclass=Singleton):
         self.network_plotter = NetworkConnectionsPlotter()
         self.data_transmitted = DataTransmitted()
 
-        self.logger.info(f"[{self.name}] Initialized completed. Router ID: {self.ident}. Experiment ID: {self.exp_id}")
+        self.logger.info(
+            f"[{self.name}] Initialized completed. Router ID: {self.ident}. Experiment ID: {self.exp_id}")
 
     def register(self, module):
         if module.name not in self.owned_nodes.keys():
@@ -98,7 +104,9 @@ class Router(metaclass=Singleton):
         name = module.get_root_name()
         return self.peers_table[name]
 
-    def broadcast(self, router_msg: List[RouterMsg]) -> List[RouterMsgResponse]:
+    def broadcast(
+            self,
+            router_msg: List[RouterMsg]) -> List[RouterMsgResponse]:
         for msg in router_msg:
             self.logger.debug(
                 f"[{self.name}] broadcasting message {msg}")
@@ -110,7 +118,9 @@ class Router(metaclass=Singleton):
             )
         return self.impl_broadcast(router_msg)
 
-    def impl_broadcast(self, router_msg: List[RouterMsg]) -> List[RouterMsgResponse]:
+    def impl_broadcast(
+            self,
+            router_msg: List[RouterMsg]) -> List[RouterMsgResponse]:
         raise NotImplementedError
 
     @staticmethod

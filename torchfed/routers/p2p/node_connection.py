@@ -26,7 +26,13 @@ class NodeConnection(threading.Thread):
         host: The host/ip of the main node.
         port: The port of the server of the main node."""
 
-    def __init__(self, main_node, sock: socket.socket, id: str, host: str, port: int):
+    def __init__(
+            self,
+            main_node,
+            sock: socket.socket,
+            id: str,
+            host: str,
+            port: int):
         super(NodeConnection, self).__init__()
 
         self.host = host
@@ -80,24 +86,39 @@ class NodeConnection(threading.Thread):
                 compressed = base64.b64encode(lzma.compress(data) + b'lzma')
 
             else:
-                self.main_node.debug_print(self.id + ":compress:Unknown compression")
+                self.main_node.debug_print(
+                    self.id + ":compress:Unknown compression")
                 return None
 
         except Exception as e:
             self.main_node.debug_print("compress: exception: " + str(e))
 
-        self.main_node.debug_print(self.id + ":compress:b64encode:" + str(compressed))
         self.main_node.debug_print(
-            self.id + ":compress:compression:" + str(int(10000 * len(compressed) / len(data)) / 100) + "%")
+            self.id +
+            ":compress:b64encode:" +
+            str(compressed))
+        self.main_node.debug_print(self.id +
+                                   ":compress:compression:" +
+                                   str(int(10000 *
+                                           len(compressed) /
+                                           len(data)) /
+                                       100) +
+                                   "%")
 
         return compressed
 
     def decompress(self, compressed):
         """Decompresses the data given the type. It is used to provide compression to lower the network traffic in case of
            large data chunks."""
-        self.main_node.debug_print(self.id + ":decompress:input: " + str(compressed))
+        self.main_node.debug_print(
+            self.id +
+            ":decompress:input: " +
+            str(compressed))
         compressed = base64.b64decode(compressed)
-        self.main_node.debug_print(self.id + ":decompress:b64decode: " + str(compressed))
+        self.main_node.debug_print(
+            self.id +
+            ":decompress:b64decode: " +
+            str(compressed))
 
         try:
             if compressed[-4:] == b'zlib':
@@ -111,7 +132,10 @@ class NodeConnection(threading.Thread):
         except Exception as e:
             print("Exception: " + str(e))
 
-        self.main_node.debug_print(self.id + ":decompress:result: " + str(compressed))
+        self.main_node.debug_print(
+            self.id +
+            ":decompress:result: " +
+            str(compressed))
 
         return compressed
 
@@ -132,20 +156,24 @@ class NodeConnection(threading.Thread):
 
         elif isinstance(data, dict):
             try:
-                self.send_packet(json.dumps(data).encode(encoding_type), compression)
+                self.send_packet(
+                    json.dumps(data).encode(encoding_type),
+                    compression)
             except TypeError as type_error:
                 self.main_node.debug_print('This dict is invalid')
                 self.main_node.debug_print(type_error)
 
             except Exception as e:  # Fixed issue #19: When sending is corrupted, close the connection
-                self.main_node.debug_print(f"nodeconnection send: Error sending data to node: {e}")
+                self.main_node.debug_print(
+                    f"nodeconnection send: Error sending data to node: {e}")
                 self.stop()  # Stopping node due to failure
 
         elif isinstance(data, bytes):
             try:
                 self.send_packet(data, compression)
             except Exception as e:  # Fixed issue #19: When sending is corrupted, close the connection
-                self.main_node.debug_print("nodeconnection send: Error sending data to node: " + str(e))
+                self.main_node.debug_print(
+                    "nodeconnection send: Error sending data to node: " + str(e))
                 self.stop()  # Stopping node due to failure
 
         else:
@@ -162,7 +190,8 @@ class NodeConnection(threading.Thread):
         """
         if len(data) > pow(2, 64):
             # for now an error is raised
-            raise BufferError("Length of the data exceeds the possible length that can be send (8 bytes (2^64))")
+            raise BufferError(
+                "Length of the data exceeds the possible length that can be send (8 bytes (2^64))")
             return
 
         if compression == 'none':
@@ -192,7 +221,8 @@ class NodeConnection(threading.Thread):
     def parse_packet(self, packet) -> Union[str, dict, bytes]:
         """Parse the packet and determines whether it has been send in str, json or byte format. It returns
            the according data."""
-        if packet.find(self.COMPR_CHAR) == len(packet) - 1:  # Check if packet was compressed
+        if packet.find(self.COMPR_CHAR) == len(packet) - \
+                1:  # Check if packet was compressed
             packet = self.decompress(packet[0:-1])
 
         try:
@@ -232,19 +262,23 @@ class NodeConnection(threading.Thread):
                 start_pos = buffer.find(self.START_BYTE)
                 end_pos = buffer.find(self.END_BYTE)
 
-                # if start or end position is not found, the find method returns -1, loop shall be continued. Only if full packets are received the dta shall be extracted.
+                # if start or end position is not found, the find method
+                # returns -1, loop shall be continued. Only if full packets are
+                # received the dta shall be extracted.
                 if start_pos == -1 or end_pos == -1:
                     time.sleep(0.01)
                     continue
 
-                packet_length = buffer[start_pos + 1:start_pos + self.PACKET_LENGTH_BYTES + 1]
+                packet_length = buffer[start_pos + \
+                    1:start_pos + self.PACKET_LENGTH_BYTES + 1]
                 (unpacked_length,) = unpack('>Q', packet_length)
 
                 if start_pos + self.PACKET_LENGTH_BYTES + unpacked_length + 1 != end_pos:
                     time.sleep(0.01)
                     raise Exception("Error: Incorrect frame construction")
 
-                packet = buffer[start_pos + self.PACKET_LENGTH_BYTES + 1:end_pos]
+                packet = buffer[start_pos +
+                                self.PACKET_LENGTH_BYTES + 1:end_pos]
                 buffer = buffer[end_pos + 1:]
 
                 self.main_node.message_count_recv += 1

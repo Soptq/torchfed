@@ -114,11 +114,24 @@ class FedAvgNode(Module):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Simulation of FedAvg')
-    parser.add_argument('--world_size', type=int, help='number of nodes in the world')
+    parser.add_argument(
+        '--world_size',
+        type=int,
+        help='number of nodes in the world')
     parser.add_argument('--rank', type=int, help='the rank of the node')
-    parser.add_argument('--master_addr', type=str, help='the address of the master node')
-    parser.add_argument('--master_port', type=str, help='the port of the master node')
-    parser.add_argument('--interface', type=str, default='eth0', help='the interface of the network (e.g. eth0)')
+    parser.add_argument(
+        '--master_addr',
+        type=str,
+        help='the address of the master node')
+    parser.add_argument(
+        '--master_port',
+        type=str,
+        help='the port of the master node')
+    parser.add_argument(
+        '--interface',
+        type=str,
+        default='eth0',
+        help='the interface of the network (e.g. eth0)')
 
     args = parser.parse_args()
     print(args)
@@ -127,7 +140,8 @@ if __name__ == '__main__':
     os.environ["MASTER_PORT"] = args.master_port
     os.environ["GLOO_SOCKET_IFNAME"] = args.interface
     os.environ["TP_SOCKET_IFNAME"] = args.interface
-    router = TorchDistributedRPCRouter(args.rank, args.world_size, visualizer=True)
+    router = TorchDistributedRPCRouter(
+        args.rank, args.world_size, visualizer=True)
 
     transform = transforms.Compose([
         transforms.ToTensor(),
@@ -153,8 +167,11 @@ if __name__ == '__main__':
         router.disconnect(node, ["node_0"])
 
     # connect
-    other_nodes_name = ["node_{}".format(i) for i in range(args.world_size) if i != args.rank]
-    connected_peers = random.sample(other_nodes_name, min(5, len(other_nodes_name))) + [current_node_name]
+    other_nodes_name = [
+        "node_{}".format(i) for i in range(
+            args.world_size) if i != args.rank]
+    connected_peers = random.sample(other_nodes_name, min(
+        5, len(other_nodes_name))) + [current_node_name]
     print(f"node {current_node_name} will connect to {connected_peers}")
     router.connect(node, connected_peers)
 

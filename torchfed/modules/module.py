@@ -129,8 +129,9 @@ class Module(metaclass=PostInitCaller):
                         router_msg.args))
                 break
             except Exception as e:
-                self.logger.warning(f"Error in {self.name} when calling {router_msg.path} from {router_msg.from_} "
-                                    f"with args {router_msg.args}: {e}")
+                self.logger.warning(
+                    f"Error in {self.name} when calling {router_msg.path} from {router_msg.from_} "
+                    f"with args {router_msg.args}: {e}")
                 self.logger.warning(f"Will try again in 1 second")
                 time.sleep(1)
 
@@ -145,7 +146,11 @@ class Module(metaclass=PostInitCaller):
         return ret
 
     def entry(self, path, args, check_exposed=True):
-        if isinstance(path, types.MethodType) and isinstance(path.__self__, Module):
+        if isinstance(
+                path,
+                types.MethodType) and isinstance(
+                path.__self__,
+                Module):
             path = f"{'/'.join(path.__self__.name.split('/')[1:])}/{path.__name__}"
 
         paths = path.split("/")
