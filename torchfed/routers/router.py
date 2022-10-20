@@ -117,6 +117,9 @@ class Router(metaclass=Singleton):
     def receive(router_msg: List[RouterMsg]):
         responses = []
         for msg in router_msg:
+            if msg.to not in Router.context.owned_nodes.keys():
+                continue
+
             Router.context.logger.debug(
                 f"[{Router.context.name}] receiving message {msg}")
 
@@ -125,15 +128,13 @@ class Router(metaclass=Singleton):
                 Router.get_root_name(msg.to),
                 msg.size
             )
-
-            if msg.to in Router.context.owned_nodes.keys():
-                resp_msg = Router.context.owned_nodes[msg.to](msg)
-                Router.context.data_transmitted.add(
-                    Router.get_root_name(resp_msg.from_),
-                    Router.get_root_name(resp_msg.to),
-                    resp_msg.size
-                )
-                responses.append(resp_msg)
+            resp_msg = Router.context.owned_nodes[msg.to](msg)
+            Router.context.data_transmitted.add(
+                Router.get_root_name(resp_msg.from_),
+                Router.get_root_name(resp_msg.to),
+                resp_msg.size
+            )
+            responses.append(resp_msg)
         return responses
 
     @staticmethod
