@@ -14,7 +14,7 @@ from torchfed.utils.helper import interface_join
 
 from torchvision.transforms import transforms
 from torchfed.datasets.CIFAR10 import TorchCIFAR10
-from torchfed.models.CIFARNet import CIFARNet
+from torchfed.models.CIFARNet import CIFAR10Net
 from torchfed.managers.dataset_manager import DatasetManager
 
 import config
@@ -35,7 +35,7 @@ class FedAvgServer(Module):
             router,
             alias="server",
             visualizer=visualizer)
-        self.model = CIFARNet()
+        self.model = CIFAR10Net()
 
         self.dataset_manager = dataset_manager
         test_dataset = self.dataset_manager.get_global_dataset()[1]
@@ -49,7 +49,7 @@ class FedAvgServer(Module):
 
         self.distributor.update(self.model.state_dict())
 
-    def set_hparams(self):
+    def get_default_hparams(self):
         return {
             "batch_size": config.batch_size,
         }
@@ -85,7 +85,7 @@ class FedAvgClient(Module):
             router,
             alias="client-{}".format(rank),
             visualizer=visualizer)
-        self.model = CIFARNet()
+        self.model = CIFAR10Net()
 
         self.dataset_manager = dataset_manager
         [self.train_dataset,
@@ -112,7 +112,7 @@ class FedAvgClient(Module):
         self.tester = self.register_submodule(
             Tester, "tester", router, self.model, self.test_loader)
 
-    def set_hparams(self):
+    def get_default_hparams(self):
         return {
             "lr": config.lr,
             "batch_size": config.batch_size,

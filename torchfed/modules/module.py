@@ -46,7 +46,7 @@ class Module(metaclass=PostInitCaller):
             router.register(self)
 
         if self.is_root():
-            self.hparams = self.set_hparams()
+            self.hparams = self.get_default_hparams()
 
             if self.override_hparams is not None and isinstance(
                     self.override_hparams, dict):
@@ -67,7 +67,7 @@ class Module(metaclass=PostInitCaller):
     def __post__init__(self):
         pass
 
-    def set_hparams(self):
+    def get_default_hparams(self):
         return {}
 
     def get_metrics(self):

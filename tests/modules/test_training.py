@@ -10,13 +10,13 @@ from torchfed.utils.decorator import exposed
 
 from torchvision.transforms import transforms
 from torchfed.datasets.CIFAR10 import TorchCIFAR10
-from torchfed.models.CIFARNet import CIFARNet
+from torchfed.models.CIFAR10Net import CIFAR10Net
 
 
 class MainModule(Module):
     def __init__(self, router):
         super(MainModule, self).__init__(router)
-        self.model = CIFARNet()
+        self.model = CIFAR10Net()
         transform = transforms.Compose([
             transforms.ToTensor(),
             transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
