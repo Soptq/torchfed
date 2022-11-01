@@ -79,7 +79,11 @@ class DeFTANode(Module):
     def bootstrap(self, bootstrap_from):
         if bootstrap_from is not None:
             global_model = self.send(
-                bootstrap_from, interface_join("distributor", DecentralizedDataDistributing.download), ())[0].data
+                bootstrap_from,
+                interface_join(
+                    "distributor",
+                    DecentralizedDataDistributing.download),
+                ())[0].data
             self.model.load_state_dict(global_model)
 
         self.distributor.update(self.model.state_dict())

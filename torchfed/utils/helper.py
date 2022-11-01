@@ -2,7 +2,7 @@ def interface_join(*args):
     """Join a list of interface names into a single interface name."""
     args_str = []
     for arg in args:
-        if type(arg) == str:
+        if isinstance(arg, str):
             args_str.append(arg)
         elif callable(arg):
             args_str.append(arg.__name__)

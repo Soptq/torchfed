@@ -78,16 +78,15 @@ class TorchCIFAR10(TorchDataset):
         for user_idx in trange(self.num_users):
             for label_idx in range(self.num_labels_for_users):
                 assigned_label = (user_idx + label_idx) % self.num_classes
-                user_x[user_idx] += split_inputs[assigned_label][idx[assigned_label]
-                                                                 : idx[assigned_label] + 10].tolist()
+                user_x[user_idx] += split_inputs[assigned_label][idx[assigned_label]                                                                 : idx[assigned_label] + 10].tolist()
                 user_y[user_idx] += (assigned_label * np.ones(10)).tolist()
                 idx[assigned_label] += 10
 
         props = np.random.lognormal(
             0, 2., (10, self.num_users, self.num_labels_for_users)
         )
-        props = np.array([[[len(v) - self.num_users]] for v in split_inputs]) * \
-                props / np.sum(props, (1, 2), keepdims=True)
+        props = np.array([[[len(v) - self.num_users]] for v in split_inputs]
+                         ) * props / np.sum(props, (1, 2), keepdims=True)
         for user_idx in trange(self.num_users):
             for label_idx in range(self.num_labels_for_users):
                 assigned_label = (user_idx + label_idx) % self.num_classes
@@ -98,8 +97,7 @@ class TorchCIFAR10(TorchDataset):
                     num_samples *= 2
                 if idx[assigned_label] + \
                         num_samples < len(split_inputs[assigned_label]):
-                    user_x[user_idx] += split_inputs[assigned_label][idx[assigned_label]
-                                                                     : idx[assigned_label] + num_samples].tolist()
+                    user_x[user_idx] += split_inputs[assigned_label][idx[assigned_label]                                                                     : idx[assigned_label] + num_samples].tolist()
                     user_y[user_idx] += (assigned_label *
                                          np.ones(num_samples)).tolist()
                     idx[assigned_label] += num_samples
@@ -118,13 +116,13 @@ class TorchCIFAR10(TorchDataset):
             num_samples = len(user_x[user_idx])
             train_len = int(num_samples * 0.75)
             train_user_data = TorchUserDataset(user_idx,
-                                          user_x[user_idx][:train_len],
-                                          user_y[user_idx][:train_len],
-                                          self.num_classes)
+                                               user_x[user_idx][:train_len],
+                                               user_y[user_idx][:train_len],
+                                               self.num_classes)
             test_user_data = TorchUserDataset(user_idx,
-                                         user_x[user_idx][train_len:],
-                                         user_y[user_idx][train_len:],
-                                         self.num_classes)
+                                              user_x[user_idx][train_len:],
+                                              user_y[user_idx][train_len:],
+                                              self.num_classes)
             user_dataset.append([train_user_data, test_user_data])
 
         return user_dataset
