@@ -7,18 +7,12 @@ import numpy as np
 
 import torch
 import torchvision
-from torchvision.transforms import transforms
 from tqdm import trange, tqdm
 
-from torchfed.datasets import Dataset
-from torchfed.types.datasets import BundleSplitDataset, UserDataset, GlobalDataset
-from torchfed.utils.hash import hex_hash
+from torchfed.datasets import TorchDataset, TorchUserDataset, TorchGlobalDataset
 
 
-class CIFAR10(Dataset):
-    split_base_folder = "cifar-10-batches-py-split"
-    split_dataset_name = "cifar-10-data"
-
+class TorchCIFAR10(TorchDataset):
     num_classes = 10
 
     def __init__(
@@ -29,48 +23,36 @@ class CIFAR10(Dataset):
             transform: Optional[Callable] = None,
             target_transform: Optional[Callable] = None,
             download: bool = False,
-            rebuild: bool = False
+            rebuild: bool = False,
+            cache_salt: int = 0,
     ) -> None:
-        self.root = root
-        self.num_users = num_users
-        self.num_labels_for_users = num_labels_for_users
-        self.transform = transform
-        self.target_transform = target_transform
-        self.download = download
+        super().__init__(
+            root,
+            TorchCIFAR10.num_classes,
+            num_users,
+            num_labels_for_users,
+            transform,
+            target_transform,
+            download,
+            rebuild,
+            cache_salt
+        )
 
-        self.identifier = hex_hash(
-            f"{root}-{num_users}-{num_labels_for_users}")
+    @property
+    def name(self) -> str:
+        return "CIFAR10"
 
-        dataset_path = os.path.join(root, self.split_base_folder)
-        data_file_name = f"{self.split_dataset_name}.{self.identifier}.pkl"
-
-        if not rebuild:
-            if os.path.exists(dataset_path):
-                try:
-                    with open(os.path.join(dataset_path, data_file_name), 'rb') as f:
-                        self.split_dataset = torch.load(f)
-                    return
-                except Exception:
-                    pass
-            else:
-                os.makedirs(dataset_path)
-
-        if transform is None:
-            self.transform = transforms.Compose([
-                transforms.ToTensor()
-            ])
-
-        self.train_dataset = torchvision.datasets.CIFAR10(
-            root, True, transform, target_transform, download)
-        self.test_dataset = torchvision.datasets.CIFAR10(
-            root, False, transform, target_transform, download)
-
+    def load_user_dataset(self) -> List[List[TorchUserDataset]]:
+        train_dataset = torchvision.datasets.CIFAR10(
+            self.root, True, self.transform, self.target_transform, self.download)
+        test_dataset = torchvision.datasets.CIFAR10(
+            self.root, False, self.transform, self.target_transform, self.download)
         train_dataloader = torch.utils.data.DataLoader(
-            self.train_dataset, batch_size=len(
-                self.train_dataset.data), shuffle=False)
+            train_dataset, batch_size=len(
+                train_dataset.data), shuffle=False)
         test_dataloader = torch.utils.data.DataLoader(
-            self.test_dataset, batch_size=len(
-                self.test_dataset.data), shuffle=False)
+            test_dataset, batch_size=len(
+                test_dataset.data), shuffle=False)
 
         tensor_train_dataset, tensor_test_dataset = {}, {}
         for _, data in tqdm(enumerate(train_dataloader, 0), file=sys.stdout):
@@ -90,34 +72,34 @@ class CIFAR10(Dataset):
             split_inputs.append(inputs[labels == label])
         _, num_channels, num_height, num_width = split_inputs[0].shape
 
-        user_x = [[] for _ in range(num_users)]
-        user_y = [[] for _ in range(num_users)]
+        user_x = [[] for _ in range(self.num_users)]
+        user_y = [[] for _ in range(self.num_users)]
         idx = np.zeros(self.num_classes, dtype=np.int64)
-        for user_idx in trange(num_users):
-            for label_idx in range(num_labels_for_users):
+        for user_idx in trange(self.num_users):
+            for label_idx in range(self.num_labels_for_users):
                 assigned_label = (user_idx + label_idx) % self.num_classes
                 user_x[user_idx] += split_inputs[assigned_label][idx[assigned_label]
-                    : idx[assigned_label] + 10].tolist()
+                                                                 : idx[assigned_label] + 10].tolist()
                 user_y[user_idx] += (assigned_label * np.ones(10)).tolist()
                 idx[assigned_label] += 10
 
         props = np.random.lognormal(
-            0, 2., (10, num_users, num_labels_for_users)
+            0, 2., (10, self.num_users, self.num_labels_for_users)
         )
-        props = np.array([[[len(v) - num_users]] for v in split_inputs]) * \
-            props / np.sum(props, (1, 2), keepdims=True)
-        for user_idx in trange(num_users):
-            for label_idx in range(num_labels_for_users):
+        props = np.array([[[len(v) - self.num_users]] for v in split_inputs]) * \
+                props / np.sum(props, (1, 2), keepdims=True)
+        for user_idx in trange(self.num_users):
+            for label_idx in range(self.num_labels_for_users):
                 assigned_label = (user_idx + label_idx) % self.num_classes
                 num_samples = int(
-                    props[assigned_label, user_idx // int(num_users / 10), label_idx])
+                    props[assigned_label, user_idx // int(self.num_users / 10), label_idx])
                 num_samples += random.randint(300, 600)
-                if num_users <= 20:
+                if self.num_users <= 20:
                     num_samples *= 2
                 if idx[assigned_label] + \
                         num_samples < len(split_inputs[assigned_label]):
                     user_x[user_idx] += split_inputs[assigned_label][idx[assigned_label]
-                        : idx[assigned_label] + num_samples].tolist()
+                                                                     : idx[assigned_label] + num_samples].tolist()
                     user_y[user_idx] += (assigned_label *
                                          np.ones(num_samples)).tolist()
                     idx[assigned_label] += num_samples
@@ -127,47 +109,32 @@ class CIFAR10(Dataset):
             user_y[user_idx] = torch.Tensor(user_y[user_idx]) \
                 .type(torch.int64)
 
-        split_dataset = BundleSplitDataset()
-        for user_idx in trange(num_users):
+        user_dataset = []
+        for user_idx in trange(self.num_users):
             combined = list(zip(user_x[user_idx], user_y[user_idx]))
             random.shuffle(combined)
             user_x[user_idx], user_y[user_idx] = zip(*combined)
 
             num_samples = len(user_x[user_idx])
             train_len = int(num_samples * 0.75)
-            train_user_data = UserDataset(user_idx,
+            train_user_data = TorchUserDataset(user_idx,
                                           user_x[user_idx][:train_len],
                                           user_y[user_idx][:train_len],
                                           self.num_classes)
-            test_user_data = UserDataset(user_idx,
+            test_user_data = TorchUserDataset(user_idx,
                                          user_x[user_idx][train_len:],
                                          user_y[user_idx][train_len:],
                                          self.num_classes)
-            split_dataset.add_user_dataset(train_user_data, test_user_data)
-        with open(os.path.join(dataset_path, data_file_name), 'wb') as f:
-            torch.save(split_dataset, f)
+            user_dataset.append([train_user_data, test_user_data])
 
-        self.split_dataset = split_dataset
+        return user_dataset
 
-    @property
-    def name(self) -> str:
-        return "CIFAR10"
-
-    def get_user_dataset(self, user_idx) -> UserDataset:
-        return self.split_dataset[user_idx]
-
-    def get_dataset(self) -> List[GlobalDataset]:
-        if hasattr(self, "train_dataset") and hasattr(self, "test_dataset"):
-            return [
-                GlobalDataset(self.train_dataset, self.num_classes),
-                GlobalDataset(self.test_dataset, self.num_classes)
-            ]
-        else:
-            train_dataset = torchvision.datasets.CIFAR10(
-                self.root, True, self.transform, self.target_transform, self.download)
-            test_dataset = torchvision.datasets.CIFAR10(
-                self.root, False, self.transform, self.target_transform, self.download)
-            return [
-                GlobalDataset(train_dataset, self.num_classes),
-                GlobalDataset(test_dataset, self.num_classes)
-            ]
+    def load_global_dataset(self) -> List[TorchGlobalDataset]:
+        train_dataset = torchvision.datasets.CIFAR10(
+            self.root, True, self.transform, self.target_transform, self.download)
+        test_dataset = torchvision.datasets.CIFAR10(
+            self.root, False, self.transform, self.target_transform, self.download)
+        return [
+            TorchGlobalDataset(train_dataset, self.num_classes),
+            TorchGlobalDataset(test_dataset, self.num_classes)
+        ]

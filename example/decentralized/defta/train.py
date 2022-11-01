@@ -11,7 +11,7 @@ from torchfed.modules.compute.tester import Tester
 from torchfed.modules.distribute.decentralized_data_distribute import DecentralizedDataDistributing
 
 from torchvision.transforms import transforms
-from torchfed.datasets.CIFAR10 import CIFAR10
+from torchfed.datasets.CIFAR10 import TorchCIFAR10
 from torchfed.models.CIFARNet import CIFARNet
 from torchfed.managers.dataset_manager import DatasetManager
 
@@ -35,7 +35,7 @@ class DeFTANode(Module):
         self.dataset_manager = dataset_manager
         [self.train_dataset,
          self.test_dataset] = self.dataset_manager.get_user_dataset(rank)
-        self.global_test_dataset = self.dataset_manager.get_dataset()[1]
+        self.global_test_dataset = self.dataset_manager.get_global_dataset()[1]
         self.train_loader = torch.utils.data.DataLoader(
             self.train_dataset, batch_size=self.hparams["batch_size"], shuffle=True)
         self.test_loader = torch.utils.data.DataLoader(
@@ -122,7 +122,7 @@ if __name__ == '__main__':
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
     ])
     dataset_manager = DatasetManager("cifar10_manager",
-                                     CIFAR10(
+                                     TorchCIFAR10(
                                          "../../data",
                                          config.num_users,
                                          config.num_labels,

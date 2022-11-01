@@ -1,2 +1,2 @@
-from torchfed.datasets.dataset import Dataset
-from torchfed.datasets.CIFAR10 import CIFAR10
+from torchfed.datasets.dataset import TorchDataset, TorchUserDataset, TorchGlobalDataset
+from torchfed.datasets.CIFAR10 import TorchCIFAR10

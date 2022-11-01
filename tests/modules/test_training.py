@@ -9,7 +9,7 @@ from torchfed.modules.compute.tester import Tester
 from torchfed.utils.decorator import exposed
 
 from torchvision.transforms import transforms
-from torchfed.datasets.CIFAR10 import CIFAR10
+from torchfed.datasets.CIFAR10 import TorchCIFAR10
 from torchfed.models.CIFARNet import CIFARNet
 
 
@@ -21,7 +21,7 @@ class MainModule(Module):
             transforms.ToTensor(),
             transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
         ])
-        dataset = CIFAR10(
+        dataset = TorchCIFAR10(
             "../../example/data",
             20,
             3,

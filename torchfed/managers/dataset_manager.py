@@ -1,15 +1,15 @@
-from torchfed.datasets import Dataset
+from torchfed.datasets import TorchDataset
 from torchvision.transforms import transforms
-from torchfed.datasets.CIFAR10 import CIFAR10
+from torchfed.datasets.CIFAR10 import TorchCIFAR10
 
 
 class DatasetManager:
-    def __init__(self, name, dataset: Dataset):
+    def __init__(self, name, dataset: TorchDataset):
         self.name = name
         self.dataset = dataset
 
-    def get_dataset(self):
-        return self.dataset.get_dataset()
+    def get_global_dataset(self):
+        return self.dataset.get_global_dataset()
 
     def get_user_dataset(self, idx):
         return self.dataset.get_user_dataset(idx)
@@ -21,7 +21,7 @@ if __name__ == '__main__':
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
     ])
     dataset_manager = DatasetManager("cifar10_manager",
-                                     CIFAR10(
+                                     TorchCIFAR10(
                                          "../../example/data",
                                          20,
                                          10,
