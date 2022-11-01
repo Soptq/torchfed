@@ -15,6 +15,8 @@ from torchfed.datasets.CIFAR10 import TorchCIFAR10
 from torchfed.models.CIFARNet import CIFARNet
 from torchfed.managers.dataset_manager import DatasetManager
 
+from torchfed.utils.helper import interface_join
+
 import config
 
 
@@ -110,7 +112,7 @@ class FedAvgClient(Module):
     def run(self):
         global_model = self.send(
             router.get_peers(self)[0],
-            "distributor/download",
+            interface_join("distributor", WeightedDataDistributing.download),
             ())[0].data
         self.model.load_state_dict(global_model)
 
@@ -120,7 +122,7 @@ class FedAvgClient(Module):
 
         self.send(
             router.get_peers(self)[0],
-            "distributor/upload",
+            interface_join("distributor", WeightedDataDistributing.upload),
             (self.name,
              self.dataset_size,
              self.model.state_dict()))

@@ -88,8 +88,7 @@ class Module(metaclass=PostInitCaller):
         return module_obj
 
     def send(self, to, path, args):
-        if callable(path):
-            path = f"{'/'.join(path.__self__.name.split('/')[1:])}/{path.__name__}"
+        path = path.__name__ if callable(path) else path
         if not isinstance(to, list):
             to = [to]
         router_msgs = []
@@ -100,6 +99,8 @@ class Module(metaclass=PostInitCaller):
                 self.writer.track(self.data_sent, name="Data Sent (bytes)")
             router_msgs.append(router_msg)
         responses = self.router.broadcast(router_msgs)
+        if len(responses) == 0:
+            self.logger.warning(f"No response received for msgs {router_msgs}")
         resp_size = 0
         for response in responses:
             resp_size += response.size

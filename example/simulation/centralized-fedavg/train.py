@@ -10,6 +10,7 @@ from torchfed.modules.module import Module
 from torchfed.modules.compute.trainer import Trainer
 from torchfed.modules.compute.tester import Tester
 from torchfed.modules.distribute.weighted_data_distribute import WeightedDataDistributing
+from torchfed.utils.helper import interface_join
 
 from torchvision.transforms import transforms
 from torchfed.datasets.CIFAR10 import TorchCIFAR10
@@ -63,10 +64,10 @@ class FedAvgServer(Module):
 
         self.global_tester.test()
 
-        self.send(router.get_peers(self), "run", ())
+        self.send(router.get_peers(self), FedAvgClient.run, ())
 
     def shutdown(self):
-        self.send(router.get_peers(self), "shutdown", ())
+        self.send(router.get_peers(self), FedAvgClient.shutdown, ())
         self.release()
         self.router.release()
 
@@ -128,7 +129,7 @@ class FedAvgClient(Module):
     def run(self):
         global_model = self.send(
             router.get_peers(self)[0],
-            "distributor/download",
+            interface_join("distributor", WeightedDataDistributing.download),
             ())[0].data
         self.model.load_state_dict(global_model)
 
@@ -138,7 +139,7 @@ class FedAvgClient(Module):
 
         self.send(
             router.get_peers(self)[0],
-            "distributor/upload",
+            interface_join("distributor", WeightedDataDistributing.upload),
             (self.name,
              self.dataset_size,
              self.model.state_dict()))

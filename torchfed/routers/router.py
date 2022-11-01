@@ -6,7 +6,7 @@ import aim
 from .router_msg import RouterMsg, RouterMsgResponse
 from torchfed.logging import get_logger
 from torchfed.utils.hash import hex_hash
-from torchfed.utils.helper import NetworkConnectionsPlotter, DataTransmitted
+from torchfed.utils.plotter import NetworkConnectionsPlotter, DataTransmitted
 
 
 class Singleton(type):

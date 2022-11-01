@@ -9,6 +9,7 @@ from torchfed.modules.module import Module
 from torchfed.modules.compute.trainer import Trainer
 from torchfed.modules.compute.tester import Tester
 from torchfed.modules.distribute.weighted_data_distribute import WeightedDataDistributing
+from torchfed.utils.helper import interface_join
 
 from torchvision.transforms import transforms
 from torchfed.datasets.CIFAR10 import TorchCIFAR10
@@ -80,7 +81,7 @@ class FedAvgNode(Module):
     def bootstrap(self, bootstrap_from):
         if bootstrap_from is not None:
             global_model = self.send(
-                bootstrap_from, "distributor/download", ())[0].data
+                bootstrap_from, interface_join("distributor", WeightedDataDistributing.download), ())[0].data
             self.model.load_state_dict(global_model)
 
         self.distributor.update(self.model.state_dict())
@@ -106,7 +107,7 @@ class FedAvgNode(Module):
         for peer in router.get_peers(self):
             self.send(
                 peer,
-                "distributor/upload",
+                interface_join("distributor", WeightedDataDistributing.upload),
                 (self.name,
                  self.dataset_size,
                  self.model.state_dict()))
