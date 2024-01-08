@@ -2,6 +2,7 @@ import networkx
 import plotly.graph_objects as go
 
 import networkx as nx
+import torch.nn
 from prettytable import PrettyTable
 
 

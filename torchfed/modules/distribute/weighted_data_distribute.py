@@ -1,3 +1,5 @@
+import copy
+
 import torch
 
 from torchfed.modules.module import Module
@@ -23,24 +25,25 @@ class WeightedDataDistributing(Module):
         self.shared = None
 
     @exposed
-    def upload(self, from_, weight, data):
-        self.total_weight += weight
-        self.storage[from_] = [weight, data]
-        return True
-
-    @exposed
     def download(self):
         return self.shared
 
-    def update(self, data):
-        self.shared = data
+    def update(self, data, weight):
+        self.shared = (copy.deepcopy(data), weight)
+
+    def fetch(self, download_path):
+        self.storage.clear()
+        for peer in self.router.get_peers(self):
+            data, weight = self.send(peer, download_path, ())[0].data
+            self.total_weight += weight
+            self.storage[peer] = [data, weight]
 
     def aggregate(self):
         ret = None
         if len(self.storage) == 0:
             return ret
         for data in self.storage.values():
-            [weight, data] = data
+            [data, weight] = data
             if isinstance(data, dict):
                 if ret is None:
                     ret = {k: v * (weight / self.total_weight)
@@ -54,5 +57,4 @@ class WeightedDataDistributing(Module):
                 else:
                     ret += data * (weight / self.total_weight)
         self.total_weight = 0
-        self.storage.clear()
         return ret

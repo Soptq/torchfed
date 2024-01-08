@@ -1,3 +1,5 @@
+import copy
+
 import torch
 import torch.optim as optim
 
@@ -15,6 +17,7 @@ class DecentralizedFedAvgNode(Module):
             router,
             rank,
             dataset_manager,
+            device="cpu",
             alias=None,
             visualizer=False,
             writer=None,
@@ -28,8 +31,9 @@ class DecentralizedFedAvgNode(Module):
             writer=writer,
             override_hparams=override_hparams)
 
+        self.device = device if torch.cuda.is_available() else "cpu"
         self.model = getattr(
-            models, self.hparams["model"])()
+            models, self.hparams["model"])().to(self.device)
         self.dataset_manager = dataset_manager
 
         [self.train_dataset,
@@ -57,27 +61,36 @@ class DecentralizedFedAvgNode(Module):
             self.model,
             self.train_loader,
             self.optimizer,
-            self.loss_fn)
+            self.loss_fn,
+            device=self.device
+        )
         self.tester = self.register_submodule(
-            Tester, "tester", router, self.model, self.test_loader)
+            Tester, "tester", router, self.model, self.test_loader, device=self.device)
         self.global_tester = self.register_submodule(
-            Tester, "global_tester", router, self.model, self.global_test_loader)
+            Tester, "global_tester", router, self.model, self.global_test_loader, device=self.device)
 
-        self.distributor.update(self.model.state_dict())
+        self.distributor.update(copy.deepcopy(self.model).cpu().state_dict(), self.dataset_size)
 
     def get_default_hparams(self):
         return {
             "lr": 1e-3,
             "batch_size": 32,
             "model": "CIFAR10Net",
-            "optimizer": "Adam",
+            "optimizer": "SGD",
             "loss_fn": "CrossEntropyLoss",
             "local_iterations": 10,
         }
 
+    def before_bootstrap(self, bootstrap_from):
+        pass
+
+    def after_bootstrap(self, bootstrap_from):
+        pass
+
     def bootstrap(self, bootstrap_from):
+        self.before_bootstrap(bootstrap_from)
         if bootstrap_from is not None:
-            global_model = self.send(
+            global_model, _ = self.send(
                 bootstrap_from,
                 interface_join(
                     "distributor",
@@ -85,33 +98,50 @@ class DecentralizedFedAvgNode(Module):
                 ())[0].data
             self.model.load_state_dict(global_model)
 
-        self.distributor.update(self.model.state_dict())
+        self.distributor.update(copy.deepcopy(self.model).cpu().state_dict(), self.dataset_size)
+        self.after_bootstrap(bootstrap_from)
+
+    def before_aggregate(self):
+        pass
+
+    def after_aggregate(self):
+        pass
 
     def aggregate(self):
+        self.before_aggregate()
         # generate latest local model
         aggregated = self.distributor.aggregate()
-        if aggregated is None:
-            aggregated = self.model.state_dict()
-        else:
+        if aggregated is not None:
             self.model.load_state_dict(aggregated)
-        self.distributor.update(aggregated)
+        self.distributor.update(copy.deepcopy(self.model).cpu().state_dict(), self.dataset_size)
+        self.after_aggregate()
+
+    def before_train_and_test(self):
+        pass
+
+    def after_train_and_test(self):
+        pass
 
     def train_and_test(self):
+        self.before_train_and_test()
         # train and tests
-        self.global_tester.test()
-        self.tester.test()
         for i in range(self.hparams["local_iterations"]):
             self.trainer.train()
+        self.tester.test()
+        self.global_tester.test()
+        self.distributor.update(copy.deepcopy(self.model).cpu().state_dict(), self.dataset_size)
+        self.after_train_and_test()
 
-    def upload(self):
-        # upload to peers
-        for peer in self.router.get_peers(self):
-            self.send(
-                peer,
-                interface_join("distributor", WeightedDataDistributing.upload),
-                (self.name,
-                 self.dataset_size,
-                 self.model.state_dict()))
+    def before_fetch(self):
+        pass
+
+    def after_fetch(self):
+        pass
+
+    def fetch(self):
+        self.before_fetch()
+        self.distributor.fetch(interface_join("distributor", WeightedDataDistributing.download))
+        self.after_fetch()
 
 
 class CentralizedFedAvgServer(Module):
@@ -144,7 +174,7 @@ class CentralizedFedAvgServer(Module):
         self.global_tester = self.register_submodule(
             Tester, "global_tester", router, self.model, self.test_loader)
 
-        self.distributor.update(self.model.state_dict())
+        self.distributor.update(copy.deepcopy(self.model).cpu().state_dict(), 1)
 
     def get_default_hparams(self):
         return {
@@ -152,15 +182,21 @@ class CentralizedFedAvgServer(Module):
             "batch_size": 32,
         }
 
-    def run(self):
-        self.global_tester.test()
+    def before_run(self):
+        pass
 
+    def after_run(self):
+        pass
+
+    def run(self):
+        self.before_run()
         aggregated = self.distributor.aggregate()
-        if aggregated is None:
-            aggregated = self.model.state_dict()
-        else:
+        if aggregated is not None:
             self.model.load_state_dict(aggregated)
-        self.distributor.update(aggregated)
+        self.global_tester.test()
+        self.distributor.update(copy.deepcopy(self.model).cpu().state_dict(), 1)
+        self.distributor.fetch(interface_join("distributor", WeightedDataDistributing.download))
+        self.after_run()
 
 
 class CentralizedFedAvgClient(Module):
@@ -198,6 +234,8 @@ class CentralizedFedAvgClient(Module):
             self.model.parameters(), lr=self.hparams["lr"])
         self.loss_fn = getattr(torch.nn, self.hparams["loss_fn"])()
 
+        self.distributor = self.register_submodule(
+            WeightedDataDistributing, "distributor", router)
         self.trainer = self.register_submodule(
             Trainer,
             "trainer",
@@ -209,30 +247,33 @@ class CentralizedFedAvgClient(Module):
         self.tester = self.register_submodule(
             Tester, "tester", router, self.model, self.test_loader)
 
+        self.distributor.update(copy.deepcopy(self.model).cpu().state_dict(), self.dataset_size)
+
     def get_default_hparams(self):
         return {
             "lr": 1e-3,
             "batch_size": 32,
             "model": "CIFAR10Net",
-            "optimizer": "Adam",
+            "optimizer": "SGD",
             "loss_fn": "CrossEntropyLoss",
             "local_iterations": 10,
         }
 
-    def run(self):
-        global_model = self.send(
-            self.router.get_peers(self)[0],
-            interface_join("distributor", WeightedDataDistributing.download),
-            ())[0].data
-        self.model.load_state_dict(global_model)
+    def before_run(self):
+        pass
 
-        self.tester.test()
+    def after_run(self):
+        pass
+
+    def run(self):
+        self.before_run()
+        aggregated = self.distributor.aggregate()
+        self.model.load_state_dict(aggregated)
+
         for i in range(self.hparams["local_iterations"]):
             self.trainer.train()
+        self.tester.test()
 
-        self.send(
-            self.router.get_peers(self)[0],
-            interface_join("distributor", WeightedDataDistributing.upload),
-            (self.name,
-             self.dataset_size,
-             self.model.state_dict()))
+        self.distributor.update(copy.deepcopy(self.model).cpu().state_dict(), self.dataset_size)
+        self.distributor.fetch(interface_join("distributor", WeightedDataDistributing.download))
+        self.after_run()

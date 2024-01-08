@@ -1,4 +1,6 @@
 import os
+from itertools import accumulate
+from operator import add
 import torch
 
 from torch.utils.data import Dataset
@@ -8,25 +10,24 @@ from torchvision.transforms import transforms
 from abc import abstractmethod, ABC
 from typing import Optional, Callable, List
 
-from torchfed.types.named import Named
-
 
 class TorchGlobalDataset(Dataset):
     """
     GlobalDataset, as its name suggests, is a global dataset wrapper that contains all data.
     """
 
-    def __init__(self, dataset, num_classes):
-        self.dataset = dataset
-        self.num_classes = num_classes
+    def __init__(self, inputs: list, labels: list, num_classes: int):
+        self.inputs: list = inputs
+        self.labels: list = labels
+        self.num_classes: int = num_classes
 
-    def __len__(self):
-        return len(self.dataset)
+    def __len__(self) -> int:
+        return len(self.inputs)
 
     def __getitem__(self, idx):
         return {
-            "inputs": self.dataset[idx][0],
-            "labels": self.dataset[idx][1],
+            "inputs": self.inputs[idx],
+            "labels": self.labels[idx],
         }
 
 
@@ -49,7 +50,22 @@ class TorchUserDataset(Dataset):
         }
 
 
-class TorchDataset(Named):
+class BaseTorchDataset:
+    @property
+    @abstractmethod
+    def name(self) -> str:
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_global_dataset(self) -> List[TorchGlobalDataset]:
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_user_dataset(self, user_idx) -> List[TorchUserDataset]:
+        raise NotImplementedError
+
+
+class TorchDataset(BaseTorchDataset):
     def __init__(
             self,
             root: str,
@@ -117,3 +133,40 @@ class TorchDataset(Named):
 
     def get_user_dataset(self, user_idx) -> List[TorchUserDataset]:
         return self.user_dataset[user_idx]
+
+
+class ComposedTorchDataset(BaseTorchDataset):
+    def __init__(
+            self,
+            datasets: List[BaseTorchDataset],
+            user_dist: List[int],
+            num_classes: int,
+    ) -> None:
+        self.datasets = datasets
+        self.user_dist = user_dist
+        self.accu_user_dist = list(accumulate(user_dist, func=add))
+        self.num_classes = num_classes
+
+    @property
+    def name(self) -> str:
+        return "-".join([d.name for d in self.datasets])
+
+    def get_global_dataset(self) -> List[TorchGlobalDataset]:
+        inner_global_datasets = [d.get_global_dataset() for d in self.datasets]
+        train_inputs, train_labels = [], []
+        test_inputs, test_labels = [], []
+        for [train_dataset, test_dataset] in inner_global_datasets:
+            train_inputs.extend(train_dataset.inputs)
+            train_labels.extend(train_dataset.labels)
+            test_inputs.extend(test_dataset.inputs)
+            test_labels.extend(test_dataset.labels)
+        return [
+            TorchGlobalDataset(train_inputs, train_labels, self.num_classes),
+            TorchGlobalDataset(test_inputs, test_labels, self.num_classes),
+        ]
+
+    def get_user_dataset(self, user_idx) -> List[TorchUserDataset]:
+        for idx, dist in enumerate(self.accu_user_dist):
+            if user_idx < dist:
+                return self.datasets[idx].get_user_dataset(user_idx - (0 if idx == 0 else self.accu_user_dist[idx - 1]))
+        raise ValueError(f"Invalid user_idx: {user_idx}")

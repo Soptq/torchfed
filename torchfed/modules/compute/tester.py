@@ -10,6 +10,7 @@ class Tester(Module):
             router,
             model,
             dataloader,
+            device="cpu",
             alias=None,
             visualizer=False,
             writer=None):
@@ -20,8 +21,9 @@ class Tester(Module):
             alias=alias,
             visualizer=visualizer,
             writer=writer)
-        self.model = model
         self.dataloader = dataloader
+        self.device = device if torch.cuda.is_available() else "cpu"
+        self.model = model.to(self.device)
         self.metrics = None
 
         self._log_dataset_distribution()
@@ -30,6 +32,7 @@ class Tester(Module):
         return self.metrics
 
     def _log_dataset_distribution(self):
+        # TODO: Combined dataset label shift
         num_classes = self.dataloader.dataset.num_classes
         labels = []
         dist = {k: 0 for k in range(num_classes)}
@@ -59,7 +62,7 @@ class Tester(Module):
         with torch.no_grad():
             for batch_idx, data in enumerate(
                     self.dataloader, 0):
-                inputs, labels = data["inputs"], data["labels"]
+                inputs, labels = data["inputs"].to(self.device), data["labels"].to(self.device)
                 outputs = self.model(inputs)
                 _, predicted = torch.max(outputs.data, 1)
                 total += labels.size(0)

@@ -72,7 +72,7 @@ class Router(metaclass=Singleton):
         if not module.is_root():
             return
         peers = [self.get_root_name(peer) for peer in peers]
-        if hasattr(self.peers_table, module.name):
+        if module.name in self.peers_table:
             for peer in peers:
                 if peer not in self.peers_table[module.name]:
                     self.peers_table[module.name].append(peer)
@@ -90,7 +90,7 @@ class Router(metaclass=Singleton):
         if not module.is_root():
             return
         peers = [self.get_root_name(peer) for peer in peers]
-        if hasattr(self.peers_table, module.name):
+        if module.name in self.peers_table:
             for peer in peers:
                 if peer in self.peers_table[module.name]:
                     self.peers_table[module.name].remove(peer)
@@ -100,9 +100,17 @@ class Router(metaclass=Singleton):
             fig = self.network_plotter.get_figure()
             self.writer.track(aim.Figure(fig), name="Network Graph")
 
+    def disconnect_all(self, module):
+        peers = self.get_peers(module)
+        self.disconnect(module, peers)
+
     def get_peers(self, module):
         name = module.get_root_name()
         return self.peers_table[name]
+
+    def n_peers(self, module):
+        name = module.get_root_name()
+        return len(self.peers_table[name]) if name in self.peers_table else 1
 
     def broadcast(
             self,

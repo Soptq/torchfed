@@ -34,7 +34,7 @@ if __name__ == '__main__':
     for rank in range(config.num_users):
         nodes.append(DecentralizedFedAvgNode(router, rank,
                                 dataset_manager,
-                                visualizer=True))
+                                visualizer=True, device="cuda:0"))
 
     # bootstrap
     boostrap_node = nodes[0].get_node_name()
@@ -62,7 +62,7 @@ if __name__ == '__main__':
         for node in nodes:
             node.train_and_test()
         for node in nodes:
-            node.upload()
+            node.fetch()
 
     for node in nodes:
         node.release()

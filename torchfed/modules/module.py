@@ -73,17 +73,24 @@ class Module(metaclass=PostInitCaller):
     def get_metrics(self):
         return None
 
-    def register_submodule(self, module: Type[T], name, router, *args) -> T:
+    def register_submodule(self, module: Type[T], name, router, *args, **kwargs) -> T:
         submodule_name = f"{self.name}/{name}"
         if submodule_name in self.routing_table:
             self.logger.error("Cannot register modules with the same name")
             raise Exception("Cannot register modules with the same name")
+
+        # use kwargs to override default
+        if "alias" not in kwargs:
+            kwargs["alias"] = submodule_name
+        if "visualizer" not in kwargs:
+            kwargs["visualizer"] = self.visualizer
+        if "writer" not in kwargs:
+            kwargs["writer"] = self.writer
+
         module_obj = module(
             router,
             *args,
-            alias=submodule_name,
-            visualizer=self.visualizer,
-            writer=self.writer)
+            **kwargs)
         self.routing_table[name] = module_obj
         return module_obj
 

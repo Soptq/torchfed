@@ -12,7 +12,7 @@ from tqdm import trange, tqdm
 from torchfed.datasets import TorchDataset, TorchUserDataset, TorchGlobalDataset
 
 
-class TorchCIFAR10(TorchDataset):
+class TorchMNIST(TorchDataset):
     num_classes = 10
 
     def __init__(
@@ -28,7 +28,7 @@ class TorchCIFAR10(TorchDataset):
     ) -> None:
         super().__init__(
             root,
-            TorchCIFAR10.num_classes,
+            TorchMNIST.num_classes,
             num_users,
             num_labels_for_users,
             transform,
@@ -40,12 +40,12 @@ class TorchCIFAR10(TorchDataset):
 
     @property
     def name(self) -> str:
-        return "CIFAR10"
+        return "MNIST"
 
     def load_user_dataset(self) -> List[List[TorchUserDataset]]:
-        train_dataset = torchvision.datasets.CIFAR10(
+        train_dataset = torchvision.datasets.MNIST(
             self.root, True, self.transform, self.target_transform, self.download)
-        test_dataset = torchvision.datasets.CIFAR10(
+        test_dataset = torchvision.datasets.MNIST(
             self.root, False, self.transform, self.target_transform, self.download)
         train_dataloader = torch.utils.data.DataLoader(
             train_dataset, batch_size=len(
@@ -78,7 +78,7 @@ class TorchCIFAR10(TorchDataset):
         for user_idx in trange(self.num_users):
             for label_idx in range(self.num_labels_for_users):
                 assigned_label = (user_idx + label_idx) % self.num_classes
-                user_x[user_idx] += split_inputs[assigned_label][idx[assigned_label]: idx[assigned_label] + 10].tolist()
+                user_x[user_idx] += split_inputs[assigned_label][idx[assigned_label]                                                                 : idx[assigned_label] + 10].tolist()
                 user_y[user_idx] += (assigned_label * np.ones(10)).tolist()
                 idx[assigned_label] += 10
 
@@ -92,7 +92,7 @@ class TorchCIFAR10(TorchDataset):
                 assigned_label = (user_idx + label_idx) % self.num_classes
                 num_samples = int(
                     props[assigned_label, user_idx // int(self.num_users / 10), label_idx])
-                num_samples += random.randint(50, 150)
+                num_samples += random.randint(300, 600)
                 if self.num_users <= 20:
                     num_samples *= 2
                 if idx[assigned_label] + \
@@ -128,9 +128,9 @@ class TorchCIFAR10(TorchDataset):
         return user_dataset
 
     def load_global_dataset(self) -> List[TorchGlobalDataset]:
-        train_dataset = torchvision.datasets.CIFAR10(
+        train_dataset = torchvision.datasets.MNIST(
             self.root, True, self.transform, self.target_transform, self.download)
-        test_dataset = torchvision.datasets.CIFAR10(
+        test_dataset = torchvision.datasets.MNIST(
             self.root, False, self.transform, self.target_transform, self.download)
         train_inputs, train_labels = [], []
         for train_idx in range(len(train_dataset)):

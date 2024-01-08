@@ -21,3 +21,4 @@
 - [ ] Improve `get_object_size` function
 - [ ] Type annotations
 - [ ] LEAF Benchmark integration
+- [ ] Deterministic training

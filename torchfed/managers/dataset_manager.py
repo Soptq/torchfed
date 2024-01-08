@@ -1,10 +1,10 @@
-from torchfed.datasets import TorchDataset
+from torchfed.datasets import BaseTorchDataset
 from torchvision.transforms import transforms
 from torchfed.datasets.CIFAR10 import TorchCIFAR10
 
 
 class DatasetManager:
-    def __init__(self, name, dataset: TorchDataset):
+    def __init__(self, name, dataset: BaseTorchDataset):
         self.name = name
         self.dataset = dataset
 

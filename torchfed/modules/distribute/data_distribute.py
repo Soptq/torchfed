@@ -1,7 +1,8 @@
-import torch
+import copy
 
 from torchfed.modules.module import Module
 from torchfed.utils.decorator import exposed
+from torchfed.utils.helper import interface_join
 
 
 class DataDistributing(Module):
@@ -22,16 +23,16 @@ class DataDistributing(Module):
         self.shared = None
 
     @exposed
-    def upload(self, from_, data):
-        self.storage[from_] = data
-        return True
-
-    @exposed
     def download(self):
         return self.shared
 
     def update(self, data):
-        self.shared = data
+        self.shared = (copy.deepcopy(data), )
+
+    def fetch(self, download_path):
+        self.storage.clear()
+        for peer in self.router.get_peers(self):
+            self.storage[peer] = self.send(peer, download_path, ())[0].data
 
     def aggregate(self):
         ret = None
@@ -49,5 +50,4 @@ class DataDistributing(Module):
                     ret = data / len(self.storage)
                 else:
                     ret += data / len(self.storage)
-        self.storage.clear()
         return ret

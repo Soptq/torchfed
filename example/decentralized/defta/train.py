@@ -65,7 +65,7 @@ class DeFTANode(Module):
         self.global_tester = self.register_submodule(
             Tester, "global_tester", router, self.model, self.global_test_loader)
 
-        self.distributor.update(self.model.state_dict())
+        self.distributor.update(self.model.state_dict(), self.dataset_size)
 
     def get_default_hparams(self):
         return {
@@ -78,7 +78,7 @@ class DeFTANode(Module):
 
     def bootstrap(self, bootstrap_from):
         if bootstrap_from is not None:
-            global_model = self.send(
+            global_model, weight, n_peers = self.send(
                 bootstrap_from,
                 interface_join(
                     "distributor",
@@ -86,7 +86,7 @@ class DeFTANode(Module):
                 ())[0].data
             self.model.load_state_dict(global_model)
 
-        self.distributor.update(self.model.state_dict())
+        self.distributor.update(self.model.state_dict(), self.dataset_size)
 
     def aggregate(self):
         # generate latest local model
@@ -95,7 +95,7 @@ class DeFTANode(Module):
             aggregated = self.model.state_dict()
         else:
             self.model.load_state_dict(aggregated)
-        self.distributor.update(aggregated)
+        self.distributor.update(aggregated, self.dataset_size)
 
     def train_and_test(self):
         # train and tests
@@ -103,17 +103,10 @@ class DeFTANode(Module):
         self.tester.test()
         for i in range(self.hparams["local_iterations"]):
             self.trainer.train()
+        self.distributor.update(self.model.state_dict(), self.dataset_size)
 
-    def upload(self):
-        # upload to peers
-        for peer in router.get_peers(self):
-            self.send(
-                peer,
-                interface_join("distributor", DecentralizedDataDistributing.upload),
-                (self.name,
-                 self.dataset_size,
-                 len(router.get_peers(self)),
-                 self.model.state_dict()))
+    def fetch(self):
+        self.distributor.fetch(interface_join("distributor", DecentralizedDataDistributing.download))
 
 
 if __name__ == '__main__':
@@ -167,7 +160,7 @@ if __name__ == '__main__':
         for node in nodes:
             node.train_and_test()
         for node in nodes:
-            node.upload()
+            node.fetch()
 
     for node in nodes:
         node.release()

@@ -1,4 +1,4 @@
-import aim
+import torch
 from prettytable import PrettyTable
 
 from torchfed.modules.module import Module
@@ -13,6 +13,7 @@ class Trainer(Module):
             dataloader,
             optimizer,
             loss_fn,
+            device="cpu",
             alias=None,
             visualizer=False,
             writer=None):
@@ -23,10 +24,11 @@ class Trainer(Module):
             alias=alias,
             visualizer=visualizer,
             writer=writer)
-        self.model = model
         self.dataloader = dataloader
         self.optimizer = optimizer
         self.loss_fn = loss_fn
+        self.device = device if torch.cuda.is_available() else "cpu"
+        self.model = model.to(self.device)
         self.metrics = None
 
         self._log_dataset_distribution()
@@ -68,13 +70,13 @@ class Trainer(Module):
         counter = 0
         running_loss = 0.0
         for batch_idx, data in enumerate(self.dataloader, 0):
-            inputs, labels = data["inputs"], data["labels"]
+            inputs, labels = data["inputs"].to(self.device), data["labels"].to(self.device)
             self.optimizer.zero_grad()
             outputs = self.model(inputs)
             loss = self.loss_fn(outputs, labels)
             loss.backward()
             self.optimizer.step()
-            running_loss += loss.item()
+            running_loss += loss.cpu().item()
             counter += 1
         self.metrics = running_loss / counter
         self.logger.info(
