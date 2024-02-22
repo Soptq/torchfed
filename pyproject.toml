@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "torchfed"
-version = "0.0.1"
+version = "0.0.2"
 authors = [
   { name="Soptq", email="squints-marital0h@icloud.com" },
 ]
@@ -31,3 +31,4 @@ dependencies = [
 [project.urls]
 "Homepage" = "https://github.com/Soptq/torchfed"
 "Bug Tracker" = "https://github.com/Soptq/torchfed/issues"
+repository = "https://github.com/Soptq/torchfed"
